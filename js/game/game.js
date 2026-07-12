@@ -239,8 +239,10 @@ function avaliar(idx) {
     detalhe = `Pico A ≈ ${fmtInt(d.picoA)} · Pico B ≈ ${fmtInt(d.picoB)}.`;
   }
 
-  // bônus de tempo (mantido: recompensa a rapidez independentemente do acerto)
-  const bonus = Math.round((state.jogo.tempoRestante / r.tempo) * SCORING.bonusTempoMax);
+  // bônus de tempo — só para quem acertou (rapidez não recompensa erro)
+  const bonus = acertou
+    ? Math.round((state.jogo.tempoRestante / r.tempo) * SCORING.bonusTempoMax)
+    : 0;
   const total = pontos + bonus;
   state.jogo.pontos += total;
   state.jogo.respostas.push({ rodada: r.titulo, pontos: total, acertou });
@@ -264,7 +266,7 @@ function resultado(idx, res) {
       <span class="rb-ico">${icone}</span><span class="rb-txt">${titulo}</span>
     </div>
     <div class="big-score ${cls}">+${res.total}</div>
-    <p class="center muted">${res.pontos} de acerto + ${res.bonus} de bônus por tempo</p>
+    <p class="center muted">${res.pontos} de acerto${res.bonus ? ` + ${res.bonus} de bônus por tempo` : ""}</p>
     ${res.faixa || ""}
     <div class="quiz-explain"><strong>${res.correto}</strong><br>${res.detalhe}</div>
     <div class="center mt"><button class="btn btn-primary" id="b-next">Continuar →</button></div>`;
