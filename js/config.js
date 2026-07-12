@@ -21,3 +21,23 @@ export const SCORING = {
 // ---- Cronômetro ------------------------------------------------------------
 export const TIMER_TICK_MS = 100; // resolução do cronômetro (ms por tique)
 export const TIMER_LOW_S = 5;     // abaixo disso, o timer entra em estado "acabando"
+
+// ---- Sons (Parte 2) --------------------------------------------------------
+// Sons sintetizados via Web Audio API (sem arquivos). Veja js/audio/sfx.js.
+export const SOM = {
+  habilitadoPorPadrao: true,     // som ligado por padrão (usuário pode mutar)
+  chaveStorage: "rnaught_som",   // preferência de som salva no localStorage
+  volume: 0.22,                  // volume mestre (0..1) — abaixe se ficar alto
+};
+
+// ---- Margem de acerto dos desafios (Parte 3) -------------------------------
+// Tolerância RELATIVA para considerar a estimativa "correta".
+//   0.20 = ±20%.  Ex.: se o R₀ certo é 3, acerta quem chutar entre 2,4 e 3,6.
+// >>> Este é o parâmetro para afrouxar/apertar a dificuldade. Troque só aqui. <<<
+export const MARGEM_ACERTO = 0.20;
+
+// Forma da pontuação em torno da margem (ajuste fino, opcional):
+export const PONTOS_ACERTO_MAX = 100; // pontos no alvo exato
+export const PONTOS_ACERTO_MIN = 60;  // pontos exatamente na borda da faixa de acerto
+export const FATOR_ERRO_ZERO = 3;     // a pontuação zera quando o erro atinge MARGEM_ACERTO × este fator
+                                      // (com 0.20 e 3 → zera em 60% de erro relativo)

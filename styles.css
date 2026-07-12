@@ -331,6 +331,60 @@ table.data td { font-variant-numeric: tabular-nums; border-top: 1px solid var(--
 .disease-bar > i { display: block; height: 100%; background: linear-gradient(90deg, var(--indigo), var(--vermelho)); }
 .disease-r0 { font-weight: 800; font-variant-numeric: tabular-nums; min-width: 62px; text-align: right; }
 
+/* ==========================================================================
+   Botão de som (barra superior)
+   ========================================================================== */
+.icon-btn {
+  flex: 0 0 auto; width: 38px; height: 38px; border-radius: 50%;
+  border: 1px solid var(--borda-2); background: var(--superficie); color: var(--texto);
+  cursor: pointer; font-size: 1rem; line-height: 1; display: grid; place-items: center;
+  transition: all .15s ease;
+}
+.icon-btn:hover { background: var(--fundo); box-shadow: var(--sh-sm); }
+.icon-btn:active { transform: translateY(1px); }
+.icon-btn.off { color: var(--texto-3); opacity: .75; }
+
+/* ==========================================================================
+   Feedback do resultado (acerto / erro) — Parte 3
+   ========================================================================== */
+.result-banner {
+  display: flex; align-items: center; justify-content: center; gap: .55rem;
+  font-weight: 800; font-size: 1.35rem; text-align: center;
+  border: 2px solid transparent; border-radius: var(--r-md);
+  padding: .75rem 1rem; margin: .25rem 0 1rem;
+}
+.result-banner .rb-ico { font-size: 1.55rem; line-height: 1; }
+.result-banner.acerto { color: var(--verde); background: rgba(5,150,105,.10); border-color: rgba(5,150,105,.35); animation: pop .35s ease; }
+.result-banner.erro   { color: var(--vermelho); background: rgba(220,38,38,.09); border-color: rgba(220,38,38,.30); animation: shake .35s ease; }
+@keyframes pop { 0% { transform: scale(.85); opacity: 0; } 60% { transform: scale(1.04); } 100% { transform: scale(1); opacity: 1; } }
+@keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+
+.big-score.acerto { color: var(--verde); }
+.big-score.erro { color: var(--vermelho); }
+
+/* ---- Barra da faixa de acerto -------------------------------------------- */
+.faixa { margin: .25rem 0 1rem; }
+.faixa-bar { position: relative; height: 16px; margin: .2rem 0; }
+.faixa-track { position: absolute; inset: 3px 0; background: var(--fundo);
+  border: 1px solid var(--borda); border-radius: var(--r-pill); overflow: hidden; }
+.faixa-banda { position: absolute; top: 0; bottom: 0; background: rgba(5,150,105,.30); }
+.faixa-alvo { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--texto); transform: translateX(-1px); }
+.faixa-palpite { position: absolute; top: 50%; width: 14px; height: 14px; border-radius: 50%;
+  transform: translate(-50%, -50%); border: 2px solid #fff; box-shadow: var(--sh-sm); }
+.faixa-palpite.ok { background: var(--verde); }
+.faixa-palpite.no { background: var(--vermelho); }
+.faixa-ends { display: flex; justify-content: space-between; font-size: .72rem; color: var(--texto-3); margin-top: .2rem; }
+.faixa-legenda { display: flex; gap: 1rem; flex-wrap: wrap; margin-top: .45rem; font-size: .78rem; color: var(--texto-3); }
+.faixa-legenda i { display: inline-block; vertical-align: middle; margin-right: .3rem; }
+.faixa-legenda .fx-banda { width: 14px; height: 10px; background: rgba(5,150,105,.30); border-radius: 3px; }
+.faixa-legenda .fx-alvo { width: 2px; height: 12px; background: var(--texto); }
+.faixa-legenda .fx-palpite { width: 12px; height: 12px; border-radius: 50%; }
+.faixa-legenda .fx-palpite.ok { background: var(--verde); }
+.faixa-legenda .fx-palpite.no { background: var(--vermelho); }
+
+/* Seleção do desafio "peak" (substitui o outline inline por classe) */
+.round-item.selected { border-color: var(--indigo); box-shadow: 0 0 0 3px rgba(79,70,229,.25); }
+
 /* ---- Utilidades ---------------------------------------------------------- */
 .mt { margin-top: 1.5rem; }
 .muted { color: var(--texto-3); }

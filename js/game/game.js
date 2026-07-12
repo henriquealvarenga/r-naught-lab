@@ -1,7 +1,11 @@
 // ============================================================================
 // game/game.js  ·  [ ~ gamificação ]
-// Rodadas curtas com cronômetro + pontuação (acerto + bônus de tempo) e quiz
-// conceitual entre rodadas. Placar final salvo em localStorage.
+// Rodadas curtas com cronômetro + pontuação e quiz conceitual entre rodadas.
+// Placar final salvo em localStorage.
+//
+// Parte 2 (sons): tique do relógio + acerto/erro (js/audio/sfx.js).
+// Parte 3 (feedback): "acertou/errou" unificado por uma margem relativa
+//   (MARGEM_ACERTO, em config.js), com banner ✅/❌ e barra visual da faixa.
 // ============================================================================
 
 import { state } from "../core/state.js";
@@ -11,7 +15,11 @@ import { fmtNum, fmtInt, fmtPct } from "../core/format.js";
 import { desenharMini, getVar } from "../ui/plot.js";
 import { setVal } from "../ui/sim.js";
 import { showScreen } from "../ui/screens.js";
-import { STORAGE_BEST_KEY, SCORING, TIMER_TICK_MS, TIMER_LOW_S } from "../config.js";
+import * as sfx from "../audio/sfx.js";
+import {
+  STORAGE_BEST_KEY, SCORING, TIMER_TICK_MS, TIMER_LOW_S,
+  MARGEM_ACERTO, PONTOS_ACERTO_MAX, PONTOS_ACERTO_MIN, FATOR_ERRO_ZERO,
+} from "../config.js";
 
 export function initGame() {
   // lista de rodadas na home
@@ -65,6 +73,7 @@ function briefing(idx) {
 
 // ---- Play ----------------------------------------------------------------
 function jogar(idx) {
+  sfx.despertar(); // retoma o AudioContext dentro do gesto (clique em "Jogar")
   const r = RODADAS[idx];
   const dados = r.gera();
   state.jogo.atual = dados;
@@ -134,10 +143,48 @@ function renderCorpo(tipo, d) {
       </div>`;
     body.querySelectorAll("[data-op]").forEach((b) => b.addEventListener("click", () => {
       state.jogo.palpite = b.dataset.op;
-      body.querySelectorAll("[data-op]").forEach((x) => x.style.outline = "");
-      b.style.outline = "3px solid var(--indigo)";
+      body.querySelectorAll("[data-op]").forEach((x) => x.classList.remove("selected"));
+      b.classList.add("selected");
     }));
   }
+}
+
+// ---- Pontuação por estimativa ---------------------------------------------
+// erroRel = |palpite − alvo| / alvo. Dentro da margem: PONTOS_ACERTO_MAX →
+// PONTOS_ACERTO_MIN. Fora: decai de PONTOS_ACERTO_MIN até 0 em MARGEM×FATOR.
+function pontosEstimativa(erroRel) {
+  if (!Number.isFinite(erroRel)) return 0;
+  if (erroRel <= MARGEM_ACERTO) {
+    const t = erroRel / MARGEM_ACERTO;                 // 0 (alvo) .. 1 (borda)
+    return Math.round(PONTOS_ACERTO_MAX - t * (PONTOS_ACERTO_MAX - PONTOS_ACERTO_MIN));
+  }
+  const zero = MARGEM_ACERTO * FATOR_ERRO_ZERO;
+  if (erroRel >= zero) return 0;
+  const t = (erroRel - MARGEM_ACERTO) / (zero - MARGEM_ACERTO); // 0 (borda) .. 1 (zero)
+  return Math.round(PONTOS_ACERTO_MIN * (1 - t));
+}
+
+// Barra visual da faixa de acerto: banda verde = intervalo aceito, traço =
+// valor certo, bolinha = palpite (verde se dentro, vermelho se fora).
+function mkFaixa(x0, x1, alvo, palpite, lo, hi, fmt, acertou) {
+  const pos = (v) => Math.max(0, Math.min(100, ((v - x0) / (x1 - x0)) * 100));
+  const bLo = pos(lo), bHi = pos(hi);
+  const temP = palpite != null && Number.isFinite(palpite);
+  const cls = acertou ? "ok" : "no";
+  return `
+    <div class="faixa">
+      <div class="faixa-bar">
+        <div class="faixa-track"><div class="faixa-banda" style="left:${bLo}%;width:${Math.max(0, bHi - bLo)}%"></div></div>
+        <div class="faixa-alvo" style="left:${pos(alvo)}%"></div>
+        ${temP ? `<div class="faixa-palpite ${cls}" style="left:${pos(palpite)}%"></div>` : ""}
+      </div>
+      <div class="faixa-ends"><span>${fmt(x0)}</span><span>${fmt(x1)}</span></div>
+      <div class="faixa-legenda">
+        <span><i class="fx-banda"></i> faixa aceita</span>
+        <span><i class="fx-alvo"></i> valor certo</span>
+        <span><i class="fx-palpite ${cls}"></i> seu palpite</span>
+      </div>
+    </div>`;
 }
 
 // ---- Avaliação ------------------------------------------------------------
@@ -146,52 +193,79 @@ function avaliar(idx) {
   const r = RODADAS[idx];
   const d = state.jogo.atual;
   const p = state.jogo.palpite;
-  let pontos = 0, correto = "", detalhe = "";
+  const margemPct = Math.round(MARGEM_ACERTO * 100);
+  let pontos = 0, acertou = false, correto = "", detalhe = "", faixa = null;
 
   if (r.id === "guessR0") {
-    const diff = p == null ? 99 : Math.abs(p - d.R0);
-    pontos = Math.max(0, Math.round(100 - diff * SCORING.guessR0Penalidade));
-    correto = `R₀ real = ${fmtNum(d.R0, 1)}`;
-    detalhe = `Seu palpite: ${p == null ? "—" : fmtNum(p, 1)} · erro de ${fmtNum(diff, 1)}.`;
+    const alvo = d.R0;
+    const erroRel = (p == null || !Number.isFinite(p)) ? Infinity : Math.abs(p - alvo) / alvo;
+    acertou = erroRel <= MARGEM_ACERTO;
+    pontos = pontosEstimativa(erroRel);
+    const lo = alvo * (1 - MARGEM_ACERTO), hi = alvo * (1 + MARGEM_ACERTO);
+    correto = `R₀ real = ${fmtNum(alvo, 1)}`;
+    detalhe = `Faixa aceita (±${margemPct}%): ${fmtNum(lo, 1)}–${fmtNum(hi, 1)}. ` +
+      `Seu palpite: ${p == null ? "—" : fmtNum(p, 1)}.`;
+    faixa = mkFaixa(0.5, 6, alvo, p, lo, hi, (v) => fmtNum(v, 1), acertou);
   }
   else if (r.id === "predictCases") {
-    const erroRel = p == null || !Number.isFinite(p) ? 1 : Math.abs(p - d.resposta) / Math.max(1, d.resposta);
-    pontos = Math.max(0, Math.round(100 * (1 - erroRel)));
-    correto = `Resposta certa = ${fmtInt(d.resposta)} casos`;
-    detalhe = `${fmtInt(d.i0)} · ${fmtInt(d.R0)}<sup>${d.alvo}</sup> = ${fmtInt(d.resposta)}.`;
+    const alvo = d.resposta;
+    const erroRel = (p == null || !Number.isFinite(p)) ? Infinity : Math.abs(p - alvo) / Math.max(1, alvo);
+    acertou = erroRel <= MARGEM_ACERTO;
+    pontos = pontosEstimativa(erroRel);
+    const lo = alvo * (1 - MARGEM_ACERTO), hi = alvo * (1 + MARGEM_ACERTO);
+    correto = `Resposta certa = ${fmtInt(alvo)} casos`;
+    detalhe = `${fmtInt(d.i0)} · ${fmtInt(d.R0)}<sup>${d.alvo}</sup> = ${fmtInt(alvo)}. ` +
+      `Faixa aceita (±${margemPct}%): ${fmtInt(lo)}–${fmtInt(hi)}. ` +
+      `Você: ${p == null || !Number.isFinite(p) ? "—" : fmtInt(p)}.`;
+    const escalaMax = Math.max(alvo * 2, Number.isFinite(p) ? p * 1.1 : 0, 1);
+    faixa = mkFaixa(0, escalaMax, alvo, p, lo, hi, (v) => fmtInt(v), acertou);
   }
   else if (r.id === "herd") {
     const alvoPct = d.resposta * 100;
-    const diff = p == null ? 99 : Math.abs(p - alvoPct);
-    pontos = Math.max(0, Math.round(100 - diff * SCORING.herdPenalidade));
+    const erroRel = (p == null || !Number.isFinite(p)) ? Infinity : Math.abs(p - alvoPct) / alvoPct;
+    acertou = erroRel <= MARGEM_ACERTO;
+    pontos = pontosEstimativa(erroRel);
+    const lo = alvoPct * (1 - MARGEM_ACERTO), hi = alvoPct * (1 + MARGEM_ACERTO);
     correto = `Correto ≈ ${fmtPct(d.resposta)}`;
-    detalhe = `1 − 1/${fmtNum(d.R0, 1)} = ${fmtPct(d.resposta)}. Sua estimativa: ${p == null ? "—" : p + "%"}.`;
+    detalhe = `1 − 1/${fmtNum(d.R0, 1)} = ${fmtPct(d.resposta)}. ` +
+      `Faixa aceita (±${margemPct}%): ${Math.round(lo)}%–${Math.round(hi)}%. ` +
+      `Sua estimativa: ${p == null ? "—" : p + "%"}.`;
+    faixa = mkFaixa(0, 100, alvoPct, p, lo, hi, (v) => Math.round(v) + "%", acertou);
   }
   else if (r.id === "peak") {
-    const acertou = p === d.correta;
-    pontos = acertou ? 100 : 0;
+    acertou = p === d.correta; // escolha binária: sem margem
+    pontos = acertou ? PONTOS_ACERTO_MAX : 0;
     correto = `Pico maior: Cenário ${d.correta} (R₀ maior → mais infectados no pico)`;
     detalhe = `Pico A ≈ ${fmtInt(d.picoA)} · Pico B ≈ ${fmtInt(d.picoB)}.`;
   }
 
-  // bônus de tempo
+  // bônus de tempo (mantido: recompensa a rapidez independentemente do acerto)
   const bonus = Math.round((state.jogo.tempoRestante / r.tempo) * SCORING.bonusTempoMax);
   const total = pontos + bonus;
   state.jogo.pontos += total;
-  state.jogo.respostas.push({ rodada: r.titulo, pontos: total });
+  state.jogo.respostas.push({ rodada: r.titulo, pontos: total, acertou });
 
-  resultado(idx, { pontos, bonus, total, correto, detalhe });
+  if (acertou) sfx.acerto(); else sfx.erro();
+
+  resultado(idx, { pontos, bonus, total, acertou, correto, detalhe, faixa });
 }
 
 function resultado(idx, res) {
   showScreen("result");
+  const cls = res.acertou ? "acerto" : "erro";
+  const icone = res.acertou ? "✅" : "❌";
+  const titulo = res.acertou ? "Acertou!" : "Não foi dessa vez";
   document.getElementById("result-card").innerHTML = `
     <div class="scorebar">
       <span class="badge">${RODADAS[idx].titulo}</span>
       <span class="badge pts">${state.jogo.pontos} pts</span>
     </div>
-    <div class="big-score">+${res.total}</div>
+    <div class="result-banner ${cls}">
+      <span class="rb-ico">${icone}</span><span class="rb-txt">${titulo}</span>
+    </div>
+    <div class="big-score ${cls}">+${res.total}</div>
     <p class="center muted">${res.pontos} de acerto + ${res.bonus} de bônus por tempo</p>
+    ${res.faixa || ""}
     <div class="quiz-explain"><strong>${res.correto}</strong><br>${res.detalhe}</div>
     <div class="center mt"><button class="btn btn-primary" id="b-next">Continuar →</button></div>`;
   document.getElementById("b-next").addEventListener("click", () => quizIntermediario(idx));
@@ -226,6 +300,7 @@ function quizIntermediario(idx) {
     document.getElementById("quiz-feedback").innerHTML =
       `<div class="quiz-explain">${acertou ? `✅ +${SCORING.quizAcerto} pts! ` : "❌ "}${item.explica}</div>`;
     document.getElementById("quiz-next-wrap").classList.remove("hidden");
+    if (acertou) sfx.acerto(); else sfx.erro();
   }));
 
   document.getElementById("b-quiz-next").addEventListener("click", () => avancar(idx));
@@ -245,7 +320,7 @@ function final() {
   document.getElementById("best-score").textContent = melhorPontuacao();
   showScreen("final");
   const linhas = state.jogo.respostas.map((r) =>
-    `<div class="disease-row"><span>${r.rodada}</span><strong>${r.pontos} pts</strong></div>`).join("");
+    `<div class="disease-row"><span>${r.acertou ? "✅" : "❌"} ${r.rodada}</span><strong>${r.pontos} pts</strong></div>`).join("");
   document.getElementById("final-card").innerHTML = `
     <h3 class="center">🏁 Fim!</h3>
     <div class="big-score">${state.jogo.pontos}</div>
@@ -263,6 +338,7 @@ function final() {
 function iniciarTimer(segundos, aoZerar) {
   pararTimer();
   state.jogo.tempoRestante = segundos;
+  let ultimoSeg = Math.ceil(segundos); // para tocar o tique só quando o segundo muda
   const elT = document.getElementById("timer");
   const elBar = document.getElementById("timebar");
   state.jogo.timer = setInterval(() => {
@@ -270,6 +346,9 @@ function iniciarTimer(segundos, aoZerar) {
     const t = Math.max(0, state.jogo.tempoRestante);
     if (elT) { elT.textContent = t.toFixed(1) + "s"; elT.classList.toggle("low", t <= TIMER_LOW_S); }
     if (elBar) elBar.style.width = (t / segundos * 100) + "%";
+    // tique a cada segundo inteiro que passa; urgente nos últimos segundos
+    const seg = Math.ceil(t);
+    if (seg !== ultimoSeg && t > 0) { ultimoSeg = seg; sfx.tick(t <= TIMER_LOW_S); }
     if (t <= 0) { pararTimer(); aoZerar(); }
   }, TIMER_TICK_MS);
 }

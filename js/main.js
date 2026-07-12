@@ -11,6 +11,7 @@ import { initSim } from "./ui/sim.js";
 import { initNav, showSection, redrawNivel } from "./ui/screens.js";
 import { initGame } from "./game/game.js";
 import { DOENCAS, R0_MAX_DOENCA } from "./game/datasets.js";
+import { estaHabilitado, alternarSom, despertar } from "./audio/sfx.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   if (state._initialized) return;
@@ -18,10 +19,26 @@ document.addEventListener("DOMContentLoaded", () => {
   initSim();     // sim.js  — controles reativos + desenho inicial
   initNav();     // screens.js — nav, data-goto, toggle de nível
   initGame();    // game.js — lista de rodadas, placar
+  initSom();     // botão de som (topbar)
   initEgg();     // easter-egg (R₀ de doenças)
 
   state._initialized = true;
 });
+
+// ---- Botão de som (mudo/ligado) -------------------------------------------
+function initSom() {
+  const btn = document.getElementById("btn-som");
+  if (!btn) return;
+  const pinta = () => {
+    const on = estaHabilitado();
+    btn.textContent = on ? "🔊" : "🔇";
+    btn.classList.toggle("off", !on);
+    btn.title = on ? "Som ligado (clique para silenciar)" : "Som mudo (clique para ligar)";
+    btn.setAttribute("aria-label", on ? "Som ligado" : "Som mudo");
+  };
+  pinta();
+  btn.addEventListener("click", () => { alternarSom(); despertar(); pinta(); });
+}
 
 // ---- Easter-egg: R₀ de doenças reais --------------------------------------
 function initEgg() {
