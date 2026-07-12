@@ -9,3 +9,6 @@
 # Logs / temporários
 *.log
 node_modules/
+
+# Documentos de trabalho (fontes/material para uso posterior — não versionar)
+_source/
