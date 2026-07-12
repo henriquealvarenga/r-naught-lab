@@ -1,10 +1,10 @@
 // ============================================================================
-// quiz.js  ·  [ ~ banco de itens conceituais ]
+// game/quiz.js  ·  [ ~ banco de itens conceituais ]
 // Perguntas de múltipla escolha exibidas entre as rodadas, com correção
 // explicativa (igual ao linear-regression-lab).
 // ============================================================================
 
-const QUIZ = [
+export const QUIZ = [
   {
     q: "O que significa R₀ = 3?",
     opcoes: [
@@ -69,7 +69,7 @@ const QUIZ = [
 ];
 
 // Sorteia uma pergunta ainda não usada (para variar entre rodadas).
-function sorteiaQuiz(usadas) {
+export function sorteiaQuiz(usadas) {
   const disponiveis = QUIZ.map((_, i) => i).filter((i) => !usadas.includes(i));
   const pool = disponiveis.length ? disponiveis : QUIZ.map((_, i) => i);
   return pool[Math.floor(Math.random() * pool.length)];

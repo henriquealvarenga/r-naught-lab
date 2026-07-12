@@ -1,5 +1,5 @@
 // ============================================================================
-// format.js  ·  [ ~ utils.R ]
+// core/format.js  ·  [ ~ utils.R ]
 // Formatação numérica no padrão brasileiro (milhar = ".", decimal = ",")
 // e utilidades de exportação CSV. Sem dependências — apenas Intl nativo.
 // ----------------------------------------------------------------------------
@@ -11,7 +11,7 @@
 // ---- Formatação BR ---------------------------------------------------------
 
 // Porte de fmt_br(x, digits): trata "quase-inteiros" como inteiros.
-function fmtBR(x, digits = 2, tol = 1e-9) {
+export function fmtBR(x, digits = 2, tol = 1e-9) {
   if (x === null || x === undefined || !Number.isFinite(x)) return "—";
   const ehInteiro = Math.abs(x - Math.round(x)) < tol;
   if (ehInteiro) {
@@ -24,13 +24,13 @@ function fmtBR(x, digits = 2, tol = 1e-9) {
 }
 
 // Inteiro puro com ponto de milhar (ex.: 12.345).
-function fmtInt(x) {
+export function fmtInt(x) {
   if (!Number.isFinite(x)) return "—";
   return new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 0 }).format(Math.round(x));
 }
 
 // Percentual BR (ex.: 66,7%).
-function fmtPct(frac, digits = 1) {
+export function fmtPct(frac, digits = 1) {
   if (!Number.isFinite(frac)) return "—";
   return new Intl.NumberFormat("pt-BR", {
     minimumFractionDigits: digits,
@@ -39,7 +39,7 @@ function fmtPct(frac, digits = 1) {
 }
 
 // Número com N casas fixas (vírgula decimal), sem forçar milhar.
-function fmtNum(x, digits = 2) {
+export function fmtNum(x, digits = 2) {
   if (!Number.isFinite(x)) return "—";
   return new Intl.NumberFormat("pt-BR", {
     minimumFractionDigits: digits,
@@ -52,7 +52,7 @@ function fmtNum(x, digits = 2) {
 //   "bruto" (internacional): separador vírgula, decimal ponto  -> write.csv
 //   "ptbr"  (BR)           : separador ";", decimal vírgula     -> write.table(dec=",")
 
-function toCSV(headers, rows, formato = "bruto", digits = 2) {
+export function toCSV(headers, rows, formato = "bruto", digits = 2) {
   const sep = formato === "ptbr" ? ";" : ",";
 
   const cell = (v) => {
@@ -74,7 +74,7 @@ function toCSV(headers, rows, formato = "bruto", digits = 2) {
 }
 
 // Dispara o download de um texto como arquivo (Blob + <a download>).
-function downloadTexto(nomeArquivo, conteudo, mime = "text/csv;charset=utf-8;") {
+export function downloadTexto(nomeArquivo, conteudo, mime = "text/csv;charset=utf-8;") {
   const blob = new Blob(["﻿" + conteudo], { type: mime }); // BOM para Excel/pt-BR
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
@@ -88,13 +88,14 @@ function downloadTexto(nomeArquivo, conteudo, mime = "text/csv;charset=utf-8;") 
 
 // ---- Numérico auxiliar -----------------------------------------------------
 
+// Privado ao módulo (só toCSV usa). Arredonda para `digits` casas.
 function round(x, digits = 2) {
   const f = Math.pow(10, digits);
   return Math.round((x + Number.EPSILON) * f) / f;
 }
 
 // Interpola rótulo curto de magnitude (para eixos): 1.2k, 3,4M...
-function fmtCompacto(x) {
+export function fmtCompacto(x) {
   if (!Number.isFinite(x)) return "—";
   const abs = Math.abs(x);
   if (abs >= 1e9) return fmtNum(x / 1e9, 1) + "B";

@@ -1,5 +1,5 @@
 // ============================================================================
-// epi.js  ·  [ ~ modelo.R ]
+// models/epi.js  ·  [ ~ modelo.R ]
 // Modelos epidemiológicos — funções puras, sem DOM nem D3.
 //
 //   NÍVEL 1 — Crescimento exponencial (geracional), fiel ao app.R:
@@ -15,7 +15,7 @@
 // ----------------------------------------------------------------------------
 
 // Gera incidência por ciclo e acumulado. Porte de gera_series() do app.R.
-function serieExponencial(R0, ciclos, i0) {
+export function serieExponencial(R0, ciclos, i0) {
   const inc = new Array(ciclos + 1);
   inc[0] = i0;
   for (let k = 1; k <= ciclos; k++) inc[k] = inc[k - 1] * R0;
@@ -29,20 +29,20 @@ function serieExponencial(R0, ciclos, i0) {
 }
 
 // Tempo de duplicação em ciclos: ln(2)/ln(R0). Só faz sentido para R0 > 1.
-function tempoDuplicacao(R0) {
+export function tempoDuplicacao(R0) {
   if (R0 <= 1) return Infinity; // não dobra (estável ou em declínio)
   return Math.log(2) / Math.log(R0);
 }
 
 // Limiar de imunidade de rebanho: HIT = 1 − 1/R0 (fração da população).
-function limiarRebanho(R0) {
+export function limiarRebanho(R0) {
   if (R0 <= 1) return 0; // abaixo de 1 não há epidemia sustentada
   return 1 - 1 / R0;
 }
 
 // Monta o quadro comparativo A x B (o data.frame do app.R).
 // tipo: "acum" | "inc"  -> qual série usar para diferença/razão.
-function compararCenarios(R0_A, R0_B, ciclos, i0, tipo) {
+export function compararCenarios(R0_A, R0_B, ciclos, i0, tipo) {
   const A = serieExponencial(R0_A, ciclos, i0);
   const B = serieExponencial(R0_B, ciclos, i0);
   const linhas = [];
@@ -67,7 +67,7 @@ function compararCenarios(R0_A, R0_B, ciclos, i0, tipo) {
 
 // Integra o modelo SIR por RK4. Retorna séries amostradas + métricas.
 //   params: { R0, D, N, I0, dias, dt }
-function modeloSIR(params) {
+export function modeloSIR(params) {
   const R0 = Math.max(0, params.R0);
   const D = Math.max(0.1, params.D);
   const N = Math.max(1, params.N);
@@ -141,7 +141,7 @@ function modeloSIR(params) {
 
 // Resolve o "tamanho final" analítico do SIR (equação implícita 1 − z = e^{−R0·z}).
 // Útil para conferência; não usado no gráfico. Retorna fração infectada.
-function tamanhoFinalSIR(R0) {
+export function tamanhoFinalSIR(R0) {
   if (R0 <= 1) return 0;
   let z = 0.5;
   for (let i = 0; i < 100; i++) {

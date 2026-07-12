@@ -1,11 +1,12 @@
 // ============================================================================
-// state.js  ·  [ ~ environment global do R ]
+// core/state.js  ·  [ ~ environment global do R ]
 // Objeto único e mutável compartilhado por todos os módulos (mesmo padrão do
-// linear-regression-lab). Sem setters/imutabilidade: os módulos leem e
-// escrevem `state.*` diretamente.
+// linear-regression-lab). Sem setters/imutabilidade: os módulos importam
+// `state` e leem/escrevem `state.*` diretamente (objeto compartilhado por
+// referência entre os imports).
 // ============================================================================
 
-const state = {
+export const state = {
   // ---- Navegação --------------------------------------------------------
   secao: "teoria",        // seção ativa: teoria | simulador | desafios | como-usar | creditos
   nivel: 1,               // simulador: 1 (exponencial) | 2 (SIR)

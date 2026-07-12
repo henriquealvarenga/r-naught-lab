@@ -1,11 +1,14 @@
 // ============================================================================
-// screens.js  ·  [ ~ roteador de UI ]
+// ui/screens.js  ·  [ ~ roteador de UI ]
 // Troca de seções (topo) e de telas do jogo. Também o toggle de nível do
 // simulador. Redesenha os gráficos quando a seção fica visível (a largura só
 // é mensurável com o contêiner exibido).
 // ============================================================================
 
-function showSection(sec) {
+import { state } from "../core/state.js";
+import { atualizarN1, atualizarN2 } from "./sim.js";
+
+export function showSection(sec) {
   state.secao = sec;
   document.querySelectorAll(".section").forEach((s) => s.classList.remove("active"));
   const alvo = document.getElementById("sec-" + sec);
@@ -27,20 +30,20 @@ function setNivel(n) {
   redrawNivel();
 }
 
-function redrawNivel() {
+export function redrawNivel() {
   if (state.nivel === 1) atualizarN1(); else atualizarN2();
 }
 
 // ---- Telas do jogo --------------------------------------------------------
-function showScreen(tela) {
+export function showScreen(tela) {
   state.jogo.tela = tela;
   document.querySelectorAll("#sec-desafios .screen").forEach((s) => s.classList.remove("active"));
   const alvo = document.getElementById("screen-" + tela);
   if (alvo) alvo.classList.add("active");
 }
 
-// ---- Wiring da navegação (chamado no app.js) ------------------------------
-function initNav() {
+// ---- Wiring da navegação (chamado no main.js) -----------------------------
+export function initNav() {
   document.querySelectorAll("#nav button").forEach((b) =>
     b.addEventListener("click", () => showSection(b.dataset.sec)));
 

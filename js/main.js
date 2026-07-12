@@ -1,8 +1,16 @@
 // ============================================================================
-// app.js  ·  [ ~ main.R / global.R ]
-// Entry point. Carregado por último (todas as dependências já no escopo global).
-// Inicializa simulador, navegação, jogo e o easter-egg; redesenha no resize.
+// main.js  ·  [ ~ main.R / global.R ]
+// Entry point (ES module). Importa os módulos e inicializa simulador,
+// navegação, jogo e o easter-egg; redesenha no resize.
+// Carregado com <script type="module"> — executa após o parse do DOM.
 // ============================================================================
+
+import { state } from "./core/state.js";
+import { fmtNum } from "./core/format.js";
+import { initSim } from "./ui/sim.js";
+import { initNav, showSection, redrawNivel } from "./ui/screens.js";
+import { initGame } from "./game/game.js";
+import { DOENCAS, R0_MAX_DOENCA } from "./game/datasets.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   if (state._initialized) return;

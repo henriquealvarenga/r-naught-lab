@@ -316,14 +316,8 @@
   </div>
 </div>
 
-<!-- ===================== SCRIPTS (ordem de dependência) ================== -->
-<script src="js/format.js"></script>   <!-- [utils.R]  formatação/CSV        -->
-<script src="js/epi.js"></script>      <!-- [modelo.R] modelos exp + SIR     -->
-<script src="js/state.js"></script>    <!-- estado global mutável            -->
-<script src="js/datasets.js"></script> <!-- presets, doenças, rodadas         -->
-<script src="js/quiz.js"></script>     <!-- banco de perguntas               -->
-<script src="js/plot.js"></script>     <!-- gráficos D3                      -->
-<script src="js/sim.js"></script>      <!-- camada reativa dos simuladores    -->
-<script src="js/game.js"></script>     <!-- gamificação                      -->
-<script src="js/screens.js"></script>  <!-- navegação seções/telas           -->
-<script src="js/app.js"></script>      <!-- entry point                      -->
+<!-- ===================== SCRIPTS (ES Modules) =========================== -->
+<!-- Um único entry point; as dependências são resolvidas por import/export.
+     Requer ser servido via HTTP (GitHub Pages, `python3 -m http.server`, etc.).
+     Estrutura: js/config.js · js/core · js/models · js/ui · js/game · js/main.js -->
+<script type="module" src="js/main.js"></script>

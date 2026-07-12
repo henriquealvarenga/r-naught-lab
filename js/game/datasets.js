@@ -1,11 +1,13 @@
 // ============================================================================
-// datasets.js  ·  [ ~ dados.R ]
+// game/datasets.js  ·  [ ~ dados.R ]
 // Dados fixos: R₀ de doenças reais (easter-egg + desafios) e a configuração
 // das rodadas de gamificação.
 // ============================================================================
 
+import { serieExponencial, limiarRebanho, modeloSIR } from "../models/epi.js";
+
 // R₀ típicos (estimativas de literatura; variam por contexto/estudo).
-const DOENCAS = [
+export const DOENCAS = [
   { nome: "Sarampo",            r0: 15,  faixa: "12–18" },
   { nome: "Coqueluche",         r0: 13,  faixa: "12–17" },
   { nome: "Difteria",           r0: 6,   faixa: "6–7" },
@@ -19,12 +21,12 @@ const DOENCAS = [
   { nome: "Gripe (sazonal)",    r0: 1.3, faixa: "1.2–1.4" },
 ];
 
-const R0_MAX_DOENCA = 18; // para escalar as barras do easter-egg
+export const R0_MAX_DOENCA = 18; // para escalar as barras do easter-egg
 
 // Configuração das rodadas. Cada rodada define tipo, título, dificuldade,
 // tempo e um gerador do "enunciado" (chamado a cada partida).
 // OBS: usa Math.random livremente — é JS de navegador, não workflow.
-const RODADAS = [
+export const RODADAS = [
   {
     id: "guessR0",
     titulo: "Adivinhe o R₀",

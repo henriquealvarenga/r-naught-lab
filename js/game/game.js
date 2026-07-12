@@ -1,12 +1,19 @@
 // ============================================================================
-// game.js  ·  [ ~ gamificação ]
+// game/game.js  ·  [ ~ gamificação ]
 // Rodadas curtas com cronômetro + pontuação (acerto + bônus de tempo) e quiz
 // conceitual entre rodadas. Placar final salvo em localStorage.
 // ============================================================================
 
-const BEST_KEY = "rnaught_best";
+import { state } from "../core/state.js";
+import { RODADAS } from "./datasets.js";
+import { QUIZ, sorteiaQuiz } from "./quiz.js";
+import { fmtNum, fmtInt, fmtPct } from "../core/format.js";
+import { desenharMini, getVar } from "../ui/plot.js";
+import { setVal } from "../ui/sim.js";
+import { showScreen } from "../ui/screens.js";
+import { STORAGE_BEST_KEY, SCORING, TIMER_TICK_MS, TIMER_LOW_S } from "../config.js";
 
-function initGame() {
+export function initGame() {
   // lista de rodadas na home
   const lista = document.getElementById("round-list");
   lista.innerHTML = RODADAS.map((r, i) =>
@@ -23,10 +30,10 @@ function initGame() {
 }
 
 function melhorPontuacao() {
-  try { return parseInt(localStorage.getItem(BEST_KEY) || "0", 10) || 0; } catch (e) { return 0; }
+  try { return parseInt(localStorage.getItem(STORAGE_BEST_KEY) || "0", 10) || 0; } catch (e) { return 0; }
 }
 function salvarMelhor(p) {
-  try { if (p > melhorPontuacao()) localStorage.setItem(BEST_KEY, String(p)); } catch (e) {}
+  try { if (p > melhorPontuacao()) localStorage.setItem(STORAGE_BEST_KEY, String(p)); } catch (e) {}
 }
 
 function iniciarJogo(idx, sequencia) {
@@ -143,7 +150,7 @@ function avaliar(idx) {
 
   if (r.id === "guessR0") {
     const diff = p == null ? 99 : Math.abs(p - d.R0);
-    pontos = Math.max(0, Math.round(100 - diff * 60));
+    pontos = Math.max(0, Math.round(100 - diff * SCORING.guessR0Penalidade));
     correto = `R₀ real = ${fmtNum(d.R0, 1)}`;
     detalhe = `Seu palpite: ${p == null ? "—" : fmtNum(p, 1)} · erro de ${fmtNum(diff, 1)}.`;
   }
@@ -156,7 +163,7 @@ function avaliar(idx) {
   else if (r.id === "herd") {
     const alvoPct = d.resposta * 100;
     const diff = p == null ? 99 : Math.abs(p - alvoPct);
-    pontos = Math.max(0, Math.round(100 - diff * 2.5));
+    pontos = Math.max(0, Math.round(100 - diff * SCORING.herdPenalidade));
     correto = `Correto ≈ ${fmtPct(d.resposta)}`;
     detalhe = `1 − 1/${fmtNum(d.R0, 1)} = ${fmtPct(d.resposta)}. Sua estimativa: ${p == null ? "—" : p + "%"}.`;
   }
@@ -168,7 +175,7 @@ function avaliar(idx) {
   }
 
   // bônus de tempo
-  const bonus = Math.round((state.jogo.tempoRestante / r.tempo) * 30);
+  const bonus = Math.round((state.jogo.tempoRestante / r.tempo) * SCORING.bonusTempoMax);
   const total = pontos + bonus;
   state.jogo.pontos += total;
   state.jogo.respostas.push({ rodada: r.titulo, pontos: total });
@@ -210,14 +217,14 @@ function quizIntermediario(idx) {
     if (respondido) return; respondido = true;
     const i = +b.dataset.i;
     const acertou = i === item.correta;
-    if (acertou) state.jogo.pontos += 20;
+    if (acertou) state.jogo.pontos += SCORING.quizAcerto;
     card.querySelectorAll(".quiz-opt").forEach((x, j) => {
       if (j === item.correta) x.classList.add("correct");
       else if (j === i) x.classList.add("wrong");
       x.disabled = true;
     });
     document.getElementById("quiz-feedback").innerHTML =
-      `<div class="quiz-explain">${acertou ? "✅ +20 pts! " : "❌ "}${item.explica}</div>`;
+      `<div class="quiz-explain">${acertou ? `✅ +${SCORING.quizAcerto} pts! ` : "❌ "}${item.explica}</div>`;
     document.getElementById("quiz-next-wrap").classList.remove("hidden");
   }));
 
@@ -259,12 +266,12 @@ function iniciarTimer(segundos, aoZerar) {
   const elT = document.getElementById("timer");
   const elBar = document.getElementById("timebar");
   state.jogo.timer = setInterval(() => {
-    state.jogo.tempoRestante -= 0.1;
+    state.jogo.tempoRestante -= TIMER_TICK_MS / 1000;
     const t = Math.max(0, state.jogo.tempoRestante);
-    if (elT) { elT.textContent = t.toFixed(1) + "s"; elT.classList.toggle("low", t <= 5); }
+    if (elT) { elT.textContent = t.toFixed(1) + "s"; elT.classList.toggle("low", t <= TIMER_LOW_S); }
     if (elBar) elBar.style.width = (t / segundos * 100) + "%";
     if (t <= 0) { pararTimer(); aoZerar(); }
-  }, 100);
+  }, TIMER_TICK_MS);
 }
 function pararTimer() {
   if (state.jogo.timer) { clearInterval(state.jogo.timer); state.jogo.timer = null; }

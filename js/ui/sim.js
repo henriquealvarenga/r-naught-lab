@@ -1,17 +1,22 @@
 // ============================================================================
-// sim.js  ·  [ ~ server.R (reativo) ]
+// ui/sim.js  ·  [ ~ server.R (reativo) ]
 // Liga os controles ao estado e ao desenho. Sem botão "Calcular": tudo
 // atualiza ao vivo (input event). Cuida da tabela, dos insights e do CSV.
 // ============================================================================
 
+import { state } from "../core/state.js";
+import { compararCenarios, tempoDuplicacao, limiarRebanho, modeloSIR } from "../models/epi.js";
+import { fmtNum, fmtInt, fmtBR, fmtPct, toCSV, downloadTexto } from "../core/format.js";
+import { desenharN1, desenharN2 } from "./plot.js";
+
 // Helpers de leitura/escrita de valores no padrão pt-BR para os rótulos.
-function setVal(id, txt) { const el = document.getElementById(id); if (el) el.textContent = txt; }
+export function setVal(id, txt) { const el = document.getElementById(id); if (el) el.textContent = txt; }
 function num(id, fallback) { const el = document.getElementById(id); const v = parseFloat(el.value); return Number.isFinite(v) ? v : fallback; }
 
 // ----------------------------------------------------------------------------
 // NÍVEL 1
 // ----------------------------------------------------------------------------
-function atualizarN1() {
+export function atualizarN1() {
   const p = state.n1;
   // clamp/validação (espelha o validate() do app.R)
   const ciclos = Math.max(1, Math.min(15, Math.round(p.ciclos)));
@@ -66,7 +71,7 @@ function insightsN1(dados, R0_A, R0_B, ciclos) {
 // ----------------------------------------------------------------------------
 // NÍVEL 2 (SIR)
 // ----------------------------------------------------------------------------
-function atualizarN2() {
+export function atualizarN2() {
   const p = state.n2;
   const sir = modeloSIR({ R0: p.R0, D: p.D, N: p.N, I0: p.I0, dias: p.dias });
   state._dadosN2 = sir;
@@ -131,9 +136,9 @@ function baixarCSV() {
 }
 
 // ----------------------------------------------------------------------------
-// Ligação dos controles (wiring) — chamada uma vez no app.js
+// Ligação dos controles (wiring) — chamada uma vez no main.js
 // ----------------------------------------------------------------------------
-function initSim() {
+export function initSim() {
   // ---- Nível 1 ----
   const cCiclos = document.getElementById("ctl-ciclos");
   cCiclos.addEventListener("input", () => { state.n1.ciclos = +cCiclos.value; setVal("v-ciclos", cCiclos.value); atualizarN1(); });

@@ -1,9 +1,22 @@
 // ============================================================================
-// plot.js  ·  [ ~ camada de gráficos (ggplot -> D3) ]
+// ui/plot.js  ·  [ ~ camada de gráficos (ggplot -> D3) ]
 // Desenha os gráficos com D3 v7. Funções puras de renderização: recebem dados
 // já calculados (por epi.js via sim.js) e (re)desenham dentro dos <svg>.
 // SVG responsivo via viewBox; a largura é medida do contêiner .chart-box.
+//
+// D3 vem do CDN (script clássico no <head>), disponível no escopo global
+// como `d3` — por isso não é importado aqui.
 // ============================================================================
+
+import { fmtCompacto, fmtBR, fmtInt, fmtNum } from "../core/format.js";
+
+// Lê uma CSS custom property (--var) do :root, com fallback.
+export function getVar(nome, fallback) {
+  try {
+    const v = getComputedStyle(document.documentElement).getPropertyValue(nome).trim();
+    return v || fallback;
+  } catch (e) { return fallback; }
+}
 
 const CORES = {
   a: getVar("--cenario-a", "#4f46e5"),
@@ -13,13 +26,6 @@ const CORES = {
   r: getVar("--sir-r", "#059669"),
   exp: getVar("--texto-3", "#64748b"),
 };
-
-function getVar(nome, fallback) {
-  try {
-    const v = getComputedStyle(document.documentElement).getPropertyValue(nome).trim();
-    return v || fallback;
-  } catch (e) { return fallback; }
-}
 
 // Cria escala Y linear ou log conforme flag, com folga no topo.
 function escalaY(valores, altura, m, logY) {
@@ -39,7 +45,7 @@ function escalaY(valores, altura, m, logY) {
 // ----------------------------------------------------------------------------
 // NÍVEL 1 — duas linhas (A e B)
 // ----------------------------------------------------------------------------
-function desenharN1(dados, cfg) {
+export function desenharN1(dados, cfg) {
   const svg = d3.select("#n1-chart");
   const tip = d3.select("#n1-tip");
   const box = svg.node().parentNode;
@@ -122,7 +128,7 @@ function hoverN1(svg, tip, box, dados, x, y, W, H, m, cfg, key) {
 // ----------------------------------------------------------------------------
 // NÍVEL 2 — SIR (S, I, R + overlay exponencial)
 // ----------------------------------------------------------------------------
-function desenharN2(sir, cfg) {
+export function desenharN2(sir, cfg) {
   const svg = d3.select("#n2-chart");
   const tip = d3.select("#n2-tip");
   const box = svg.node().parentNode;
@@ -204,7 +210,7 @@ function hoverN2(svg, tip, sir, x, y, W, H, m) {
 // ----------------------------------------------------------------------------
 // Gráfico mini para os desafios (uma única curva, sem eixos pesados)
 // ----------------------------------------------------------------------------
-function desenharMini(svgSel, serie, cor) {
+export function desenharMini(svgSel, serie, cor) {
   const svg = d3.select(svgSel);
   const box = svg.node().parentNode;
   const W = Math.max(280, box.clientWidth || 480);

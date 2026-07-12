@@ -33,21 +33,33 @@ python3 -m http.server 8000
 
 ## Estrutura
 
+Organizado em **ES Modules** (`import`/`export`) por responsabilidade — cada
+arquivo declara explicitamente suas dependências.
+
 ```
-index.html      # estrutura e seções; carrega os scripts em ordem de dependência
-styles.css      # design system (tokens em :root) + layout responsivo
+index.html         # estrutura e seções; carrega um único <script type="module">
+styles.css         # design system (tokens em :root) + layout responsivo
 js/
-  format.js     # formatação pt-BR + exportação CSV        [~ utils.R]
-  epi.js        # modelos: exponencial (N1) e SIR (N2)      [~ modelo.R]
-  state.js      # estado global mutável
-  datasets.js   # presets, R₀ de doenças reais, rodadas
-  quiz.js       # banco de perguntas conceituais
-  plot.js       # gráficos D3
-  sim.js        # camada reativa dos simuladores
-  game.js       # gamificação (rodadas, pontuação, timer)
-  screens.js    # navegação entre seções e telas
-  app.js        # entry point
+  main.js          # entry point — importa e inicializa tudo   [~ main.R]
+  config.js        # parâmetros ajustáveis (pontuação, timer, chaves)
+  core/
+    state.js       # estado global mutável (objeto compartilhado)
+    format.js      # formatação pt-BR + exportação CSV          [~ utils.R]
+  models/
+    epi.js         # modelos: exponencial (N1) e SIR (N2)       [~ modelo.R]
+  ui/
+    plot.js        # gráficos D3
+    sim.js         # camada reativa dos simuladores             [~ server.R]
+    screens.js     # navegação entre seções e telas
+  game/
+    datasets.js    # presets, R₀ de doenças reais, rodadas
+    quiz.js        # banco de perguntas conceituais
+    game.js        # gamificação (rodadas, pontuação, timer)
 ```
+
+> **Nota:** por usar ES Modules, o app precisa ser **servido via HTTP** (não
+> abre por duplo-clique no `file://`). Use o GitHub Pages ou um servidor local
+> (veja acima).
 
 ## Limitações
 
