@@ -1,78 +1,114 @@
-# R-naught Lab — Simulador de R₀ e Dinâmica de Epidemias
+# Simulador Epidemiológico Educacional (SEIHRD + Metapopulação)
 
-Laboratório **interativo e educacional** sobre o **número básico de reprodução (R₀, "R-naught")**.
-Escrito em **JavaScript puro + D3.js v7 + CSS puro**, sem etapa de build — basta abrir o `index.html`.
-É a adaptação para a web de um simulador originalmente feito em **R Shiny**.
+Um "anti-Plague" para estudantes de medicina: o objetivo **não** é exterminar a
+população, e sim **entender causalidade epidemiológica** — como parâmetros
+demográficos (população, densidade, mobilidade, saneamento, transporte) e virais
+(R₀, letalidade, período infeccioso, via de transmissão) moldam a curva de uma
+epidemia, o pico hospitalar e o número de mortes.
 
-🌐 **Demo:** _(GitHub Pages)_ — habilite Pages apontando para o branch `main` (raiz).
+Protótipo funcional (Fase 1). Motor de simulação validado por testes de sanidade
+científica. Interface bilíngue (PT/EN), modo livre (sandbox) + cenários guiados.
 
-## O que ele faz
+---
 
-Dois níveis, do simples ao realista:
+## Como rodar
 
-- **Nível 1 — Crescimento exponencial:** compara dois cenários (A e B) com
-  `inc[k] = inc[k-1] × R₀` (ou seja, `i₀ · R₀ᵏ`). Alterna entre casos acumulados e por ciclo,
-  escala log, tabela em formato brasileiro (vírgula decimal) e **download CSV** (internacional ou BR).
-  Mostra ainda **tempo de duplicação** e **limiar de imunidade de rebanho** (`1 − 1/R₀`).
-- **Nível 2 — Modelo SIR:** integra `S' = −βSI/N`, `I' = βSI/N − γI`, `R' = γI` (com `β = R₀·γ`,
-  `γ = 1/D`). Exibe as curvas S/I/R, o **pico de infectados**, o **tamanho final do surto**,
-  o **R efetivo** `R_t = R₀·S/N` e um **overlay exponencial** que evidencia onde a curva real satura.
+### Opção 1 — Preview instantâneo (sem instalar nada)
+Abra `dist/epidemic-sim-preview.html` no navegador. É um arquivo único,
+autocontido, gerado a partir do código-fonte modular.
 
-Além disso: **desafios gamificados** (estime o R₀, preveja casos, imunidade de rebanho), **quiz**
-conceitual com correção, e um easter-egg com o R₀ de doenças reais.
-
-## Como rodar localmente
-
-Como é um site estático, qualquer servidor simples serve:
+### Opção 2 — Desenvolvimento (código modular)
+Os módulos usam ES Modules, então precisam ser servidos por HTTP (não `file://`):
 
 ```bash
-cd r-naught-lab
-python3 -m http.server 8000
-# abra http://localhost:8000
+npm install          # instala esbuild (só para o build)
+npm run serve        # python3 -m http.server 8080
+# abra http://localhost:8080
 ```
 
-## Estrutura
-
-Organizado em **ES Modules** (`import`/`export`) por responsabilidade — cada
-arquivo declara explicitamente suas dependências.
-
-```
-index.html         # estrutura e seções; carrega um único <script type="module">
-styles.css         # design system (tokens em :root) + layout responsivo
-js/
-  main.js          # entry point — importa e inicializa tudo   [~ main.R]
-  config.js        # parâmetros ajustáveis (pontuação, timer, chaves)
-  core/
-    state.js       # estado global mutável (objeto compartilhado)
-    format.js      # formatação pt-BR + exportação CSV          [~ utils.R]
-  models/
-    epi.js         # modelos: exponencial (N1) e SIR (N2)       [~ modelo.R]
-  ui/
-    plot.js        # gráficos D3
-    sim.js         # camada reativa dos simuladores             [~ server.R]
-    screens.js     # navegação entre seções e telas
-  game/
-    datasets.js    # presets, R₀ de doenças reais, rodadas
-    quiz.js        # banco de perguntas conceituais
-    game.js        # gamificação (rodadas, pontuação, timer)
+### Rodar os testes do motor
+```bash
+npm test             # node tests/engine.test.mjs
 ```
 
-> **Nota:** por usar ES Modules, o app precisa ser **servido via HTTP** (não
-> abre por duplo-clique no `file://`). Use o GitHub Pages ou um servidor local
-> (veja acima).
+### Gerar o preview autocontido
+```bash
+npm run build        # node scripts/build.mjs -> dist/epidemic-sim-preview.html
+```
 
-## Limitações
+---
 
-Modelo **simplificado e determinístico**, com finalidade **exclusivamente educacional**. Não considera
-heterogeneidade de contatos, dinâmica estocástica, medidas de saúde pública ou variação biológica.
-**Não** deve ser usado como previsão de epidemias reais nem como base para decisões clínicas.
+## Estrutura do projeto
 
-## Autor
+```
+epidemic-sim/
+├── index.html                 # app (dev, carrega src/main.js como módulo)
+├── package.json
+├── src/
+│   ├── config/
+│   │   └── constants.js        # constantes de calibração e enums (sem lógica)
+│   ├── engine/                 # MOTOR — puro, sem DOM, testável isoladamente
+│   │   ├── compartments.js     # leitura/escrita do vetor de estado SEIHRD
+│   │   ├── model.js            # derivadas dy/dt (o coração matemático)
+│   │   ├── integrator.js       # Runge-Kutta 4 genérico
+│   │   ├── metapopulation.js   # matriz de mobilidade + fator de contato
+│   │   ├── interventions.js    # políticas de saúde pública (modificadores)
+│   │   ├── metrics.js          # Rt, tamanho final, imunidade de rebanho
+│   │   └── simulation.js       # ORQUESTRADOR (única porta de entrada do motor)
+│   ├── data/                   # DADOS como configuração (não código)
+│   │   ├── cities.js           # perfis A/B/C anonimizados
+│   │   ├── pathogens.js        # presets de patógenos
+│   │   └── scenarios.js        # cenários guiados (missões)
+│   ├── i18n/                   # internacionalização PT/EN
+│   │   ├── pt.js  en.js  index.js
+│   ├── state/
+│   │   └── store.js            # estado único observável (pub/sub)
+│   ├── ui/                     # camada de apresentação
+│   │   ├── controls.js  interventions-ui.js
+│   │   ├── charts.js           # gráficos em canvas, sem dependências
+│   │   ├── panels.js           # KPIs, mapa, explicação
+│   │   └── styles.css
+│   └── main.js                 # ponto de entrada (wiring UI + store + motor)
+├── tests/
+│   └── engine.test.mjs         # testes de sanidade científica
+├── scripts/
+│   └── build.mjs               # bundler -> dist autocontido
+├── dist/
+│   └── epidemic-sim-preview.html
+└── docs/                       # DOCUMENTAÇÃO (leia ONBOARDING.md primeiro)
+    ├── ONBOARDING.md           # ⭐ comece aqui (para analista técnico / Claude Code)
+    ├── ARCHITECTURE.md         # mapa de módulos, fluxo de dados, extensão
+    ├── MODEL_MATH.md           # equações, mapeamento de parâmetros, referências
+    ├── DESIGN_SPEC.md          # especificação de produto e pedagogia
+    ├── DATA_REFERENCE_INTERNAL.md  # 🔒 INTERNO: cidades reais por trás de A/B/C
+    └── ROADMAP.md              # fases futuras
+```
 
-**Henrique Alvarenga** — Médico Psiquiatra; Professor de Medicina (UNIPTAN e UFSJ).
-🌐 [henriquealvarenga.com](https://www.henriquealvarenga.com) ·
-📚 [Lattes](http://lattes.cnpq.br/6147640440978297)
+---
 
-## Licença
+## Princípios de arquitetura (por que está assim)
 
-[MIT](LICENSE).
+1. **Motor puro e isolado.** `src/engine/*` não conhece o DOM, não guarda estado
+   global e não usa aleatoriedade — por isso é testável em Node e reutilizável
+   (poderia virar backend, worker, ou biblioteca npm sem mudar uma linha).
+2. **Dados como configuração.** Cidades, patógenos e cenários são objetos
+   declarativos em `src/data/`. Adicionar uma cidade ou cenário **não** exige
+   tocar no motor nem na UI.
+3. **Estado único (store).** Toda a UI lê de `src/state/store.js` e reage a
+   mudanças. Um só ponto de verdade = debug simples.
+4. **i18n desacoplado.** Nenhuma string fica hardcoded na UI; tudo passa por
+   `t(chave)`.
+5. **Sem dependências de runtime.** Gráficos em canvas próprios; nenhum CDN. O
+   único dev-dependency é o esbuild (apenas para gerar o preview).
+
+Para estender o sistema, veja `docs/ONBOARDING.md` → "Receitas".
+
+---
+
+## Status científico
+
+O modelo é um SEIHRD determinístico com acoplamento de metapopulação. Passa em 11
+testes de sanidade (tamanho final vs teoria, Rt=1 no pico exato do SEIR,
+conservação de população, efeito do saneamento por via de transmissão, atraso
+metapopulacional). **É uma ferramenta de ensino, não de previsão ou decisão de
+saúde pública.**

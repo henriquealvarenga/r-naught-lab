@@ -1,0 +1,324 @@
+<!-- ==========================================================================
+     R-naught Lab — index.html
+     Laboratório interativo sobre R₀ (número básico de reprodução).
+     Stack: JS puro + D3 v7 (CDN) + CSS puro. Sem build. Pronto p/ GitHub Pages.
+     Scripts carregados em ordem de dependência (ver final do <body>).
+     ========================================================================== -->
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>R-naught Lab — Simulador de R₀ e Dinâmica de Epidemias</title>
+<meta name="description" content="Laboratório interativo sobre o número básico de reprodução (R₀): crescimento exponencial, modelo SIR, imunidade de rebanho e desafios. Ferramenta educacional." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+<link rel="stylesheet" href="styles.css" />
+
+<!-- ====================== BARRA SUPERIOR / NAV ============================ -->
+<header class="topbar">
+  <div class="inner">
+    <div class="logo" id="logo" title="R-naught Lab">
+      <span class="dot">R<sub>0</sub></span>
+      <span>R-naught Lab</span>
+    </div>
+    <nav class="nav" id="nav">
+      <button data-sec="teoria" class="active">Teoria</button>
+      <button data-sec="simulador">Simulador</button>
+      <button data-sec="desafios">Desafios</button>
+      <button data-sec="como-usar">Como usar</button>
+      <button data-sec="creditos">Créditos</button>
+    </nav>
+    <button id="btn-som" class="icon-btn" type="button" title="Som">🔊</button>
+  </div>
+</header>
+
+<!-- ============================ TEORIA =================================== -->
+<section id="sec-teoria" class="section active">
+  <div class="hero">
+    <h1>O que é o <span class="r0">R<sub>0</sub></span>?</h1>
+    <p>O <strong>número básico de reprodução</strong> (R₀, "R-naught") é o número médio de pessoas que
+      um caso infecta numa população totalmente suscetível. Ele decide se uma doença
+      <em>desaparece</em> (R₀ &lt; 1) ou <em>se espalha</em> (R₀ &gt; 1) — e com que velocidade.</p>
+    <div class="btn-cta-row">
+      <button class="btn btn-primary" data-goto="simulador">▶ Abrir o simulador</button>
+      <button class="btn btn-ghost" data-goto="desafios">🎯 Ir para os desafios</button>
+    </div>
+    <p class="prof mt">Material educacional · Prof. Henrique Alvarenga</p>
+  </div>
+
+  <div class="wrap">
+    <div class="grid-cards">
+      <div class="card">
+        <div class="ico">🔁</div>
+        <h3>Ciclo de transmissão</h3>
+        <p>Cada "ciclo" é uma <strong>geração</strong> de contágios. Se 1 caso gera R₀ novos casos,
+          eles geram R₀² na geração seguinte, e assim por diante.</p>
+      </div>
+      <div class="card">
+        <div class="ico">📈</div>
+        <h3>Crescimento exponencial</h3>
+        <p>No início, os casos crescem como <span class="formula">i₀ · R₀ᵏ</span>. Pequenas diferenças
+          em R₀ viram diferenças gigantes em poucos ciclos — o coração do <strong>Nível 1</strong>.</p>
+      </div>
+      <div class="card">
+        <div class="ico">⚖️</div>
+        <h3>R₀ vs R<sub>t</sub></h3>
+        <p>R₀ é o potencial inicial. À medida que as pessoas se tornam imunes, vale o R
+          <strong>efetivo</strong> R<sub>t</sub> = R₀ · (S/N). Quando R<sub>t</sub> cai abaixo de 1, a epidemia recua.</p>
+      </div>
+      <div class="card">
+        <div class="ico">🛡️</div>
+        <h3>Imunidade de rebanho</h3>
+        <p>A fração que precisa estar imune para conter a doença é
+          <span class="formula">1 − 1/R₀</span>. Sarampo (R₀ ~ 15) exige ~93%; por isso vacinar tanto importa.</p>
+      </div>
+      <div class="card">
+        <div class="ico">🌊</div>
+        <h3>Por que a curva satura</h3>
+        <p>O crescimento exponencial não dura para sempre: quando faltam suscetíveis, a curva
+          atinge um <strong>pico</strong> e cai. É o que o <strong>Nível 2 (SIR)</strong> mostra.</p>
+      </div>
+      <div class="card">
+        <div class="ico">💉</div>
+        <h3>Aplicação clínica</h3>
+        <p>Entender R₀ orienta metas de vacinação, distanciamento e leitos. Explore os
+          <button class="linklike" data-goto="desafios" style="all:unset;color:var(--indigo);cursor:pointer;font-weight:600;">desafios</button>
+          para fixar os conceitos.</p>
+      </div>
+    </div>
+
+    <div class="callout mt">
+      <strong>Uso educacional.</strong> Este é um modelo simplificado e determinístico. Não considera
+      heterogeneidade de contatos, estocasticidade, medidas de saúde pública ou variação biológica.
+      Serve para <em>compreender</em> R₀ — não para prever epidemias reais ou embasar decisões clínicas.
+    </div>
+  </div>
+</section>
+
+<!-- =========================== SIMULADOR ================================= -->
+<section id="sec-simulador" class="section">
+  <div class="wrap">
+    <div class="section-title">
+      <h2>Simulador</h2>
+      <p>Ajuste os parâmetros e veja as curvas atualizarem <strong>ao vivo</strong>.</p>
+    </div>
+
+    <div class="center">
+      <div class="level-toggle" id="level-toggle">
+        <button data-nivel="1" class="active">Nível 1 · Exponencial</button>
+        <button data-nivel="2">Nível 2 · SIR / saturação</button>
+      </div>
+    </div>
+
+    <!-- ---------- NÍVEL 1 ---------- -->
+    <div id="nivel1" class="sim-layout">
+      <aside class="panel">
+        <h4>Parâmetros gerais</h4>
+        <div class="control">
+          <label>Número de ciclos <span class="val" id="v-ciclos">12</span></label>
+          <input type="range" id="ctl-ciclos" min="1" max="15" step="1" value="12" />
+          <small>Máx. 15 ciclos.</small>
+        </div>
+        <div class="control">
+          <label>Casos iniciais (ciclo 0)</label>
+          <input type="number" id="ctl-i0" min="0" step="1" value="1" />
+        </div>
+
+        <h4>Cenário A</h4>
+        <div class="control">
+          <label>R₀ (A) <span class="val" id="v-r0a">1,5</span></label>
+          <input type="range" id="ctl-r0a" min="0" max="15" step="0.5" value="1.5" />
+        </div>
+
+        <h4>Cenário B</h4>
+        <div class="control">
+          <label>R₀ (B) <span class="val" id="v-r0b">3,0</span></label>
+          <input type="range" id="ctl-r0b" min="0" max="15" step="0.5" value="3" />
+        </div>
+
+        <h4>Visualização</h4>
+        <div class="control">
+          <div class="segmented" id="ctl-tipo">
+            <button data-tipo="acum" class="active">Acumulado</button>
+            <button data-tipo="inc">No ciclo</button>
+          </div>
+        </div>
+        <div class="control">
+          <label class="switch"><input type="checkbox" id="ctl-logy" /> Escala log no eixo Y</label>
+        </div>
+
+        <h4>Download</h4>
+        <div class="control">
+          <div class="segmented" id="ctl-csvfmt">
+            <button data-fmt="bruto" class="active">Internacional</button>
+            <button data-fmt="ptbr">Formato BR</button>
+          </div>
+          <small>Internacional: decimal com ponto. BR: decimal com vírgula, separador ";".</small>
+        </div>
+        <button class="btn btn-ghost" id="btn-csv" style="width:100%;justify-content:center;">⬇ Baixar CSV</button>
+      </aside>
+
+      <main>
+        <div class="panel">
+          <div class="chart-title" id="n1-title">Evolução de casos</div>
+          <div class="chart-sub" id="n1-sub"></div>
+          <div class="legend">
+            <span><i class="swatch sw-a"></i> Cenário A</span>
+            <span><i class="swatch sw-b"></i> Cenário B</span>
+          </div>
+          <div class="chart-box"><svg id="n1-chart"></svg><div class="tooltip" id="n1-tip"></div></div>
+        </div>
+
+        <div class="stats" id="n1-stats"></div>
+
+        <div class="panel mt">
+          <h4 style="margin-top:0;">Tabela de resultados (A × B)</h4>
+          <div class="table-scroll"><table class="data" id="n1-table"></table></div>
+        </div>
+      </main>
+    </div>
+
+    <!-- ---------- NÍVEL 2 ---------- -->
+    <div id="nivel2" class="sim-layout hidden">
+      <aside class="panel">
+        <h4>Parâmetros do surto</h4>
+        <div class="control">
+          <label>R₀ <span class="val" id="v-r0">2,5</span></label>
+          <input type="range" id="ctl-r0" min="0.5" max="12" step="0.1" value="2.5" />
+        </div>
+        <div class="control">
+          <label>Período infeccioso (dias) <span class="val" id="v-d">7</span></label>
+          <input type="range" id="ctl-d" min="1" max="30" step="1" value="7" />
+        </div>
+        <div class="control">
+          <label>População (N)</label>
+          <input type="number" id="ctl-n" min="100" step="1000" value="100000" />
+        </div>
+        <div class="control">
+          <label>Infectados iniciais (I₀)</label>
+          <input type="number" id="ctl-i0sir" min="1" step="1" value="10" />
+        </div>
+        <div class="control">
+          <label>Horizonte (dias) <span class="val" id="v-dias">160</span></label>
+          <input type="range" id="ctl-dias" min="30" max="365" step="5" value="160" />
+        </div>
+        <div class="control">
+          <label class="switch"><input type="checkbox" id="ctl-exp" checked /> Mostrar overlay exponencial</label>
+          <small>Linha tracejada = crescimento exponencial "puro" (Nível 1) para comparar.</small>
+        </div>
+      </aside>
+
+      <main>
+        <div class="panel">
+          <div class="chart-title">Modelo SIR — Suscetíveis · Infectados · Recuperados</div>
+          <div class="chart-sub" id="n2-sub"></div>
+          <div class="legend">
+            <span><i class="swatch sw-s"></i> Suscetíveis</span>
+            <span><i class="swatch sw-i"></i> Infectados</span>
+            <span><i class="swatch sw-r"></i> Recuperados</span>
+            <span id="n2-leg-exp"><i class="swatch sw-exp"></i> Exponencial</span>
+          </div>
+          <div class="chart-box"><svg id="n2-chart"></svg><div class="tooltip" id="n2-tip"></div></div>
+        </div>
+
+        <div class="stats" id="n2-stats"></div>
+
+        <div class="callout mt">
+          <strong>Repare:</strong> no começo a curva de infectados acompanha o exponencial (tracejado),
+          mas quando os suscetíveis se esgotam ela <em>satura</em>, atinge o pico (onde R<sub>t</sub> = 1) e cai —
+          exatamente o que o crescimento exponencial puro do Nível 1 <em>não</em> captura.
+        </div>
+      </main>
+    </div>
+  </div>
+</section>
+
+<!-- =========================== DESAFIOS ================================== -->
+<section id="sec-desafios" class="section">
+  <div class="wrap">
+    <div class="section-title">
+      <h2>Desafios</h2>
+      <p>Rodadas rápidas com cronômetro para treinar sua intuição sobre R₀.</p>
+    </div>
+
+    <!-- telas do jogo -->
+    <div id="screen-home" class="screen active">
+      <div class="game-card">
+        <div class="scorebar">
+          <span class="badge">🎮 4 rodadas</span>
+          <span class="badge pts">Melhor: <span id="best-score">0</span> pts</span>
+        </div>
+        <h3>Escolha uma rodada — ou jogue todas em sequência</h3>
+        <p class="muted">Cada rodada vale pontos por <strong>acerto</strong> e um <strong>bônus</strong> por rapidez.</p>
+        <div class="round-list" id="round-list"></div>
+        <div class="mt center"><button class="btn btn-primary" id="btn-play-all">▶ Jogar tudo</button></div>
+      </div>
+    </div>
+
+    <div id="screen-briefing" class="screen"><div class="game-card" id="briefing-card"></div></div>
+    <div id="screen-play" class="screen"><div class="game-card" id="play-card"></div></div>
+    <div id="screen-result" class="screen"><div class="game-card" id="result-card"></div></div>
+    <div id="screen-quiz" class="screen"><div class="game-card" id="quiz-card"></div></div>
+    <div id="screen-final" class="screen"><div class="game-card" id="final-card"></div></div>
+  </div>
+</section>
+
+<!-- =========================== COMO USAR ================================= -->
+<section id="sec-como-usar" class="section">
+  <div class="wrap">
+    <div class="section-title"><h2>Como usar</h2></div>
+    <div class="grid-cards">
+      <div class="card"><div class="ico">1️⃣</div><h3>Nível 1 — Exponencial</h3>
+        <p>Compare dois cenários (A e B) mudando R₀. Alterne entre casos <em>acumulados</em> e <em>por ciclo</em>,
+          ligue a escala log e baixe a tabela em CSV.</p></div>
+      <div class="card"><div class="ico">2️⃣</div><h3>Nível 2 — SIR</h3>
+        <p>Veja S, I e R ao longo do tempo. Ajuste R₀, período infeccioso e população, e observe o pico
+          e o tamanho final do surto.</p></div>
+      <div class="card"><div class="ico">🎯</div><h3>Desafios</h3>
+        <p>Estime o R₀ de uma curva, preveja casos e calcule a imunidade de rebanho. Responda ao quiz
+          entre rodadas e some pontos.</p></div>
+      <div class="card"><div class="ico">🧪</div><h3>Explore</h3>
+        <p>Não há resposta "errada" ao explorar: mexa nos controles e veja como R₀ muda tudo. Descubra o
+          easter-egg clicando no logo. 😉</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================== CRÉDITOS ================================== -->
+<section id="sec-creditos" class="section">
+  <div class="wrap">
+    <div class="section-title"><h2>Créditos</h2></div>
+    <div class="author">
+      <h3>👨‍⚕️ Henrique Alvarenga</h3>
+      <p>Médico Psiquiatra (UFMG, 1997), com residência em Psiquiatria pelo Hospital das Clínicas da UFMG.
+        Professor de Medicina (UNIPTAN e UFSJ), Mestre em Ensino em Saúde (UNIFENAS). Atua na interface entre
+        ciência, tecnologia e educação médica, explorando R, Python e IA para inovação em saúde.</p>
+      <p>
+        🌐 <a href="https://www.henriquealvarenga.com" target="_blank" rel="noopener">henriquealvarenga.com</a> ·
+        📚 <a href="http://lattes.cnpq.br/6147640440978297" target="_blank" rel="noopener">Currículo Lattes</a>
+      </p>
+      <p class="muted" style="margin:0;">Adaptação para web (JS + D3) de um simulador originalmente escrito em R Shiny.</p>
+    </div>
+  </div>
+  <footer class="footer">
+    <p>R-naught Lab · Licença <strong>MIT</strong> · Ferramenta educacional</p>
+    <p><a href="https://www.henriquealvarenga.com" target="_blank" rel="noopener">henriquealvarenga.com</a></p>
+    <p class="stack">JavaScript puro · D3.js v7 · CSS puro · GitHub Pages</p>
+  </footer>
+</section>
+
+<!-- ===================== EASTER-EGG (R₀ de doenças) ===================== -->
+<div class="overlay" id="egg">
+  <div class="box">
+    <button class="close" id="egg-close" aria-label="Fechar">✕</button>
+    <h3>🦠 R₀ de doenças reais</h3>
+    <p class="muted">Estimativas típicas do número básico de reprodução (variam por contexto e estudo).</p>
+    <div id="egg-list"></div>
+  </div>
+</div>
+
+<!-- ===================== SCRIPTS (ES Modules) =========================== -->
+<!-- Um único entry point; as dependências são resolvidas por import/export.
+     Requer ser servido via HTTP (GitHub Pages, `python3 -m http.server`, etc.).
+     Estrutura: js/config.js · js/core · js/models · js/ui · js/game · js/main.js -->
+<script type="module" src="js/main.js"></script>

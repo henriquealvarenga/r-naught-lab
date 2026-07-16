@@ -1,0 +1,22 @@
+{
+  "name": "epidemic-sim-edu",
+  "version": "0.1.0",
+  "description": "Simulador epidemiologico educacional (SEIHRD + metapopulacao) para estudantes de medicina. Anti-Plague: o objetivo e entender causalidade, nao exterminar.",
+  "type": "module",
+  "scripts": {
+    "test": "node tests/engine.test.mjs",
+    "build": "node scripts/build.mjs",
+    "serve": "python3 -m http.server 8080"
+  },
+  "keywords": [
+    "epidemiology",
+    "SEIHRD",
+    "metapopulation",
+    "education",
+    "simulation"
+  ],
+  "license": "MIT",
+  "devDependencies": {
+    "esbuild": "^0.21.5"
+  }
+}

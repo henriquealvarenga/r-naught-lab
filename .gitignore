@@ -12,3 +12,10 @@ node_modules/
 
 # Documentos de trabalho (fontes/material para uso posterior — não versionar)
 _source/
+
+# Build autocontido (regenerável via `npm run build`)
+dist/
+
+# Referência interna — mapeia Cidade A/B/C às cidades reais.
+# O repositório é público; este mapeamento fica SÓ na máquina da equipe.
+docs/DATA_REFERENCE_INTERNAL.md
