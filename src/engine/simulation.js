@@ -108,13 +108,15 @@ export function runSimulation(config) {
       // R0 efetivo local (para Rt) com intervencoes vigentes.
       const wEff = Math.min(1, ctx.sanitationLevel[i] + mod.sanitationBoost[i]);
       const betaEff = ctx.rates.betaBase * ctx.contactFactor[i] * (1 - ctx.sanitationSensitivity * wEff) * mod.betaMult[i];
-      const R0Local = betaEff / ctx.rates.gamma;
+      const gammaEff = ctx.rates.gamma * mod.gammaMult[i];
+      const R0Local = betaEff / gammaEff;
+      const capEff = ctx.capacity[i] * mod.capacityMult[i];
 
       perCity[i].series.push({
         day, S, E, I, H, R, D, N,
         Rt: effectiveR(R0Local, S, N),
-        hospOccupancy: ctx.capacity[i] > 0 ? H / ctx.capacity[i] : 0,
-        capacity: ctx.capacity[i],
+        hospOccupancy: capEff > 0 ? H / capEff : 0,
+        capacity: capEff,
       });
       aggS += S; aggE += E; aggI += I; aggH += H; aggR += R; aggD += D; aggN += N;
     }

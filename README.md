@@ -7,7 +7,9 @@ demográficos (população, densidade, mobilidade, saneamento, transporte) e vir
 epidemia, o pico hospitalar e o número de mortes.
 
 Protótipo funcional (Fase 1). Motor de simulação validado por testes de sanidade
-científica. Interface bilíngue (PT/EN), modo livre (sandbox) + cenários guiados.
+científica. Interface bilíngue (PT/EN) com dois modos: **Modo Jogo** (fluxo em 3
+telas, estilo *anti-Plague*, dirigido pelo motor real) e **Modo Análise** (o
+painel-dashboard de exploração livre + cenários guiados).
 
 ---
 
@@ -41,7 +43,7 @@ npm run build        # node scripts/build.mjs -> dist/epidemic-sim-preview.html
 ## Estrutura do projeto
 
 ```
-epidemic-sim/
+r-naught-lab/
 ├── index.html                 # app (dev, carrega src/main.js como módulo)
 ├── package.json
 ├── src/
@@ -58,17 +60,28 @@ epidemic-sim/
 │   ├── data/                   # DADOS como configuração (não código)
 │   │   ├── cities.js           # perfis A/B/C anonimizados
 │   │   ├── pathogens.js        # presets de patógenos
-│   │   └── scenarios.js        # cenários guiados (missões)
+│   │   ├── scenarios.js        # cenários guiados (missões)
+│   │   ├── deck.js             # baralho de intervenções do Modo Jogo
+│   │   ├── news.js             # regras do noticiário SNN (declarativas)
+│   │   ├── quiz.js             # quiz do relatório de fim
+│   │   └── real-diseases.js    # tabela de R₀ de doenças reais (bilíngue)
 │   ├── i18n/                   # internacionalização PT/EN
-│   │   ├── pt.js  en.js  index.js
+│   │   └── pt.js  en.js  index.js
 │   ├── state/
-│   │   └── store.js            # estado único observável (pub/sub)
-│   ├── ui/                     # camada de apresentação
+│   │   └── store.js            # estado único observável (pub/sub) — Modo Análise
+│   ├── game/                   # MODO JOGO — sobre o motor real (Opção A)
+│   │   ├── store.js            # config + índice de dia; re-simula a cada jogada
+│   │   ├── screens.js          # 3 telas + cockpit + SNN + relatório
+│   │   ├── charts.js           # 2 gráficos de eixo Y fixo
+│   │   └── sfx.js              # sons sintetizados (Web Audio)
+│   ├── analysis/
+│   │   └── index.js            # MODO ANÁLISE — o painel-dashboard
+│   ├── ui/                     # camada de apresentação (Modo Análise)
 │   │   ├── controls.js  interventions-ui.js
 │   │   ├── charts.js           # gráficos em canvas, sem dependências
 │   │   ├── panels.js           # KPIs, mapa, explicação
-│   │   └── styles.css
-│   └── main.js                 # ponto de entrada (wiring UI + store + motor)
+│   │   └── styles.css          # inclui o cockpit do jogo, escopado em .game-app
+│   └── main.js                 # roteador Jogo ↔ Análise
 ├── tests/
 │   └── engine.test.mjs         # testes de sanidade científica
 ├── scripts/
@@ -107,8 +120,8 @@ Para estender o sistema, veja `docs/ONBOARDING.md` → "Receitas".
 
 ## Status científico
 
-O modelo é um SEIHRD determinístico com acoplamento de metapopulação. Passa em 11
+O modelo é um SEIHRD determinístico com acoplamento de metapopulação. Passa em 15
 testes de sanidade (tamanho final vs teoria, Rt=1 no pico exato do SEIR,
 conservação de população, efeito do saneamento por via de transmissão, atraso
-metapopulacional). **É uma ferramenta de ensino, não de previsão ou decisão de
-saúde pública.**
+metapopulacional, e conservação sob as intervenções `isolation`/`beds` do jogo).
+**É uma ferramenta de ensino, não de previsão ou decisão de saúde pública.**

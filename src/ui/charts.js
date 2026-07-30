@@ -17,7 +17,8 @@ function niceMax(v) {
   if (v <= 0) return 1;
   const pow = Math.pow(10, Math.floor(Math.log10(v)));
   const n = v / pow;
-  const step = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
+  // passos redondos mais finos: evita folga exagerada (ex.: 20,3M -> 25M, nao 50M).
+  const step = n <= 1 ? 1 : n <= 1.5 ? 1.5 : n <= 2 ? 2 : n <= 2.5 ? 2.5 : n <= 3 ? 3 : n <= 5 ? 5 : 10;
   return step * pow;
 }
 

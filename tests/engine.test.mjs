@@ -125,5 +125,55 @@ console.log('[7] Metapopulacao: cidade isolada (baixa conectividade) tem pico ma
   assert(`pico da Cidade C (dia ${dayC}) chega depois da Cidade A (dia ${dayA})`, dayC > dayA);
 }
 
+// ---------------------------------------------------------------------------
+console.log('[8] Isolar casos (intervencao isolation): conserva populacao e encurta a epidemia');
+{
+  // Isolar casos = testar-rastrear-isolar: aumenta gamma (encurta periodo infeccioso),
+  // reduzindo o R0 efetivo (R0 = beta/gamma) -> menor taxa de ataque final.
+  const withIsolation = () => {
+    const cfg = singleCityConfig(2.5);
+    cfg.interventions = [{ type: 'isolation', value: 0.4, startDay: 0, cities: 'all' }];
+    return cfg;
+  };
+  const rBase = runSimulation(singleCityConfig(2.5));
+  const rIso = runSimulation(withIsolation());
+  const cons = (r) => {
+    const a = r.aggregate[0], b = r.aggregate.at(-1);
+    return approx(a.N + a.D, b.N + b.D, 1);
+  };
+  assert('populacao conservada com isolation ativa', cons(rIso),
+    `inicio=${(rIso.aggregate[0].N + rIso.aggregate[0].D).toFixed(0)} fim=${(rIso.aggregate.at(-1).N + rIso.aggregate.at(-1).D).toFixed(0)}`);
+  const arBase = (rBase.aggregate.at(-1).R + rBase.aggregate.at(-1).D) / rBase.aggregate[0].N;
+  const arIso = (rIso.aggregate.at(-1).R + rIso.aggregate.at(-1).D) / rIso.aggregate[0].N;
+  assert(`isolation reduz taxa de ataque (${(arBase * 100).toFixed(0)}% -> ${(arIso * 100).toFixed(0)}%)`, arIso < arBase - 0.05);
+}
+
+// ---------------------------------------------------------------------------
+console.log('[9] Expandir leitos (intervencao beds): conserva populacao e reduz mortes por colapso');
+{
+  // Patogeno grave numa cidade com poucos leitos -> H estoura a capacidade -> mortes por
+  // sobrecarga. Expandir leitos (capacidade variavel no tempo) deve reduzir esses obitos.
+  const collapseConfig = (interventions) => ({
+    cities: [{
+      id: 'A', labelKey: '', descKey: '',
+      population: 1_000_000, density: REFERENCE_DENSITY, sanitation: 0,
+      connectivity: 0, hospitalCapacity: 2_000,
+    }],
+    pathogen: { route: 'contact', R0: 2.5, latentPeriod: 4, infectiousPeriod: 7, hospRate: 0.40, ifr: 0.15, hospStay: 12 },
+    interventions, seed: { city: 0, infections: 50 }, horizonDays: 400,
+  });
+  const rNoBeds = runSimulation(collapseConfig([]));
+  const rBeds = runSimulation(collapseConfig([{ type: 'beds', value: 4, startDay: 0, cities: 'all' }]));
+  const cons = (r) => {
+    const a = r.aggregate[0], b = r.aggregate.at(-1);
+    return approx(a.N + a.D, b.N + b.D, 1);
+  };
+  assert('populacao conservada com beds ativa', cons(rBeds),
+    `inicio=${(rBeds.aggregate[0].N + rBeds.aggregate[0].D).toFixed(0)} fim=${(rBeds.aggregate.at(-1).N + rBeds.aggregate.at(-1).D).toFixed(0)}`);
+  const deathsNoBeds = rNoBeds.aggregate.at(-1).D;
+  const deathsBeds = rBeds.aggregate.at(-1).D;
+  assert(`expandir leitos reduz obitos (${deathsNoBeds.toFixed(0)} -> ${deathsBeds.toFixed(0)})`, deathsBeds < deathsNoBeds);
+}
+
 console.log(`\n== Resultado: ${passed} passaram, ${failed} falharam ==\n`);
 process.exit(failed === 0 ? 0 : 1);

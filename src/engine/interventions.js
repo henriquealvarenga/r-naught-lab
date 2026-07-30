@@ -8,7 +8,8 @@
  *
  * Cada intervencao e um objeto declarativo:
  *   {
- *     type: 'distancing' | 'masks' | 'mobility_restriction' | 'vaccination' | 'sanitation',
+ *     type: 'distancing' | 'masks' | 'mobility_restriction' | 'vaccination' |
+ *           'sanitation' | 'isolation' | 'beds',
  *     value: number,          // intensidade 0..1 (ex.: 0.5 = corta 50%)
  *     startDay, endDay,       // janela de vigencia (endDay opcional = infinito)
  *     cities: number[] | 'all'
@@ -27,21 +28,27 @@ const CATALOG = {
   mobility_restriction: (v) => ({ mob: 1 - v }),
   // move S->R
   vaccination: (v) => ({ vax: v }),           // fracao/dia de S vacinada * eficacia
+  // encurta o periodo infeccioso: gamma efetivo = gamma * (1 + v)  (testar-rastrear-isolar)
+  isolation:  (v) => ({ gamma: 1 + v }),
+  // expande a capacidade hospitalar: capacidade efetiva = capacidade * (1 + v)  (leitos de campanha)
+  beds:       (v) => ({ capacity: 1 + v }),
 };
 
 /**
  * Cria um resolvedor de intervencoes para nCities cidades.
  * @param {Array} list          intervencoes declarativas
  * @param {number} nCities
- * @returns {{resolveAt: (t:number)=>{betaMult:Float64Array,mobMult:number,vaxRate:Float64Array,sanitationBoost:Float64Array}}}
+ * @returns {{resolveAt: (t:number)=>{betaMult:Float64Array,gammaMult:Float64Array,mobMult:number,vaxRate:Float64Array,sanitationBoost:Float64Array,capacityMult:Float64Array}}}
  */
 export function createInterventions(list, nCities) {
   const active = (list || []).slice();
 
   // buffers reutilizados
   const betaMult = new Float64Array(nCities);
+  const gammaMult = new Float64Array(nCities);
   const vaxRate = new Float64Array(nCities);
   const sanitationBoost = new Float64Array(nCities);
+  const capacityMult = new Float64Array(nCities);
 
   function applies(iv, t, city) {
     if (t < iv.startDay) return false;
@@ -52,8 +59,10 @@ export function createInterventions(list, nCities) {
 
   function resolveAt(t) {
     betaMult.fill(1);
+    gammaMult.fill(1);
     vaxRate.fill(0);
     sanitationBoost.fill(0);
+    capacityMult.fill(1);
     let mobMult = 1;
 
     for (const iv of active) {
@@ -63,15 +72,17 @@ export function createInterventions(list, nCities) {
       for (let c = 0; c < nCities; c++) {
         if (!applies(iv, t, c)) continue;
         if (out.beta != null) betaMult[c] *= out.beta;
+        if (out.gamma != null) gammaMult[c] *= out.gamma;
         if (out.vax != null) vaxRate[c] += out.vax;
         if (out.sanitationBoost != null) sanitationBoost[c] += out.sanitationBoost;
+        if (out.capacity != null) capacityMult[c] *= out.capacity;
       }
       if (out.mob != null) {
         // restricao de mobilidade e global neste prototipo (aplica se vigente p/ qualquer cidade)
         if (applies(iv, t, 0) || iv.cities === 'all') mobMult *= out.mob;
       }
     }
-    return { betaMult, mobMult, vaxRate, sanitationBoost };
+    return { betaMult, gammaMult, mobMult, vaxRate, sanitationBoost, capacityMult };
   }
 
   return { resolveAt };

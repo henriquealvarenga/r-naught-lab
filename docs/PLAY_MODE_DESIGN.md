@@ -5,8 +5,9 @@
 > Sempre que decidirmos algo sobre o jogo, registrar aqui **com data**. Serve
 > para o Claude Code e para nós retomarmos o raciocínio em sessões futuras.
 >
-> Status geral: **em design.** O que existe é um protótipo navegável
-> (`game-mockup.html`, ver §4), ainda **não** a implementação real sobre o motor.
+> Status geral: **migração executada (2026-07-17).** O Modo Jogo agora roda
+> **sobre o motor real** (`src/engine/*`) via `src/game/*` — ver §8. O protótipo
+> `game-mockup.html` (§4) permanece só como referência de design.
 
 ---
 
@@ -205,9 +206,10 @@ pro app real, mover as regras pra `src/data/` (declarativo) + i18n `t()` (pt/en)
 - [x] **Fim automático + relatório de FIM** — encerra quando a epidemia realmente
       acaba (ativos < 0,4% do pico), não só no dia 360; card final com óbitos, dias
       em colapso, pico de infecciosos, duração e % recuperados.
-- [ ] **Modo Análise** como aba funcional no topo (hoje desabilitado no protótipo).
-- [ ] Migrar do protótipo para a implementação real sobre `src/engine/*` —
-      **plano de execução decidido em §7 (Opção A escolhida).**
+- [x] **Modo Análise** como aba funcional no topo — toggle Jogo↔Análise no
+      `index.html`, roteado por `src/main.js`.
+- [x] Migrar do protótipo para a implementação real sobre `src/engine/*` —
+      **feito (Opção A), ver §8.**
 
 ---
 
@@ -273,3 +275,93 @@ casam** e deixar `isolar`/`leitos` por último.
 
 **Regra que não muda:** o motor continua **puro**. Índice de dia, histórico de compras
 e estado do jogo vivem na **UI/store** — **nunca** em `src/engine/*`.
+
+---
+
+## 8. Migração executada (2026-07-17) — como ficou
+
+A Opção A do §7 foi implementada. O Modo Jogo agora roda **sobre o motor real**,
+sem nenhuma cópia simplificada do modelo. Mapa dos arquivos novos/alterados:
+
+**Motor (lacunas do §7, com testes de conservação):**
+- `src/engine/interventions.js` — `CATALOG` ganhou `isolation: v→{gamma:1+v}`
+  (encurta o período infeccioso) e `beds: v→{capacity:1+v}` (capacidade
+  variável no tempo). `resolveAt` agora devolve `gammaMult` e `capacityMult`.
+- `src/engine/model.js` — consome `gammaMult` (γ efetivo no fluxo de I) e
+  `capacityMult` (capacidade efetiva no cálculo de colapso/overflow).
+- `src/engine/simulation.js` — `record()` reflete γ efetivo no Rₜ e a
+  capacidade efetiva em `hospOccupancy`/`capacity`.
+- `tests/engine.test.mjs` — 2 checagens novas ([8] isolation, [9] beds).
+  **Total: 15 testes** (eram 11), todos verdes.
+
+**Opção A (re-simular + ler por índice):**
+- `src/game/store.js` — guarda `config` + `dayIndex`. Avançar = ler
+  `series[dayIndex]`; comprar = *append* em `interventions` (com `startDay =
+  dayIndex`) + `runSimulation`; rewind = índice ← D e descarta compras com
+  `startDay > D` (orçamento devolvido). **Sem pilha de snapshots.** As notícias
+  são recomputadas de forma determinística por `computeTimeline()` sobre
+  `series[0..dayIndex]` — por isso o rewind é coerente por construção.
+
+**Dados declarativos + i18n (portados do protótipo):**
+- `src/data/deck.js` (baralho de 6 cartas → tipos do `CATALOG`),
+  `src/data/news.js` (regras SNN com `when(c)` + chaves i18n),
+  `src/data/quiz.js`. Strings em `src/i18n/pt.js` **e** `en.js`; helper novo
+  `tf(key, params)` interpola `{placeholders}` das manchetes.
+
+**UI do jogo:** `src/game/screens.js` (3 telas + cockpit + SNN + relatório),
+`src/game/charts.js` (2 gráficos de eixo Y fixo), `src/game/sfx.js` (sons Web
+Audio). CSS escopado em **`.game-app`** (não interfere no Modo Análise); ids do
+jogo usam prefixo `g-`.
+
+**Roteamento:** `src/main.js` virou o roteador **Jogo ↔ Análise**; o antigo
+painel-dashboard virou `src/analysis/index.js` (`initAnalysis`). `index.html`
+tem o toggle no topo.
+
+**App clássico removido (2026-07-17):** decidiu-se manter **um único app** (o da
+raiz, com os dois modos). A pasta `/classic/` e o link "Clássico ↗" do cabeçalho
+foram removidos. O que valia do clássico já estava portado (sons, quiz); a única
+peça insubstituível — a **tabela de R₀ de doenças reais** (easter-egg futuro) —
+foi salva em **`src/data/real-diseases.js`** (bilíngue). *Revoga a decisão de
+manter `/classic/` registrada nas rodadas 1 e 4 acima.*
+
+**Verificado nesta sessão:** `npm test` (15/15); `npm run build` (bundle OK,
+146 KB); store headless (Cidade A encerra no dia 148 — mesma dinâmica do
+protótipo —, plantões `detect→firstdeath→collapse→turnaround`, rewind devolve
+orçamento e trunca compras); paridade pt/en de todas as chaves i18n.
+
+**Gráficos: painel 2×2 com zoom automático (2026-07-17).** Notou-se que, com o
+eixo fixo, a onda de infecciosos fica rente ao zero (172k contra ½N ≈ 5,95M) e
+"demora a subir". Em vez de trocar o eixo fixo (que a rodada 2 escolheu de
+propósito, pela magnitude/comparação), **acrescentou-se ao lado** uma versão com
+**zoom automático**: o cockpit virou 2×2 — coluna esquerda = escala fixa (macro
+½N; zoom clínico 2,5× cap), coluna direita = zoom "catraca". O eixo do zoom é
+`niceMax(máximo da série até o dia atual)`: sobe em degraus redondos, trava no
+pico e re-aperta no rewind — função pura do `dayIndex`, **sem estado novo**
+(coerente com a Opção A). Cima-direita foca em I; baixo-direita foca em H com a
+linha de capacidade (desenhada só quando cabe no quadro). Só camada de desenho —
+motor e store intocados. Cockpit alargado (`.game-app .wrap` → 1320px).
+
+**Pendências herdadas do §6** (não bloqueiam a migração): ampliar o catálogo de
+manchetes (rumo a 60–80); ligar o easter-egg de R₀ de doenças reais na UI
+(dados já em `src/data/real-diseases.js`).
+
+---
+
+## 9. Modo Jogo é a porta de entrada (2026-07-30)
+
+**Decisão:** abrir o app **no Modo Jogo**, não no Modo Análise. Na migração do §8
+o roteador nasceu com `mode = 'analysis'` — herança de quando o dashboard era o
+único app —, então quem chegava na landing page caía no painel de exploração
+livre. Para o público-alvo (estudante de medicina, primeira visita) o jogo é o
+gancho; a Análise é o aprofundamento de quem já entendeu a dinâmica.
+
+- `index.html` — aba **Jogo** nasce `active`; `#analysis-root` nasce
+  `display:none` (antes era o `#game-root`).
+- `src/main.js` — `mode = 'game'` e `setMode('game')` no `init()`.
+- **Montagem preguiçosa dos dois modos.** `initAnalysis()` saiu do `init()` e
+  agora roda na primeira vez que o modo Análise é aberto (espelhando o
+  `gameMounted` que o jogo já tinha), com um `analysisMounted`. Evita rodar uma
+  `runSimulation` + desenhar 4 gráficos que ninguém vai ver na abertura.
+  `onLanguageChange` só chama `rerenderAnalysis()` se o dashboard existir.
+  Ordem importa: no `setMode`, o `display` é ajustado **antes** do init, porque
+  `drawLineChart` mede `canvas.clientWidth` — com o container escondido daria 0.

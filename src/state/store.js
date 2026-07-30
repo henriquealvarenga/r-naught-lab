@@ -26,6 +26,7 @@ const state = {
   config: defaultConfig(),
   result: null,           // ultimo resultado de simulacao
   evaluation: null,       // avaliacao do cenario (se houver)
+  selectedCityId: 'A',    // cidade em foco (editor lateral + graficos do Modo Analise)
 };
 
 const listeners = new Set();
@@ -75,6 +76,12 @@ export function setPathogen(preset) {
 
 export function setInterventions(list) {
   state.config.interventions = list;
+  emit();
+}
+
+/** Cidade em foco no Modo Analise (editada na lateral e exibida nos graficos). */
+export function setSelectedCity(id) {
+  state.selectedCityId = id;
   emit();
 }
 

@@ -14,8 +14,8 @@
     </div>
     <div class="top-actions">
       <div class="tabs">
-        <button id="tab-sandbox" class="tab active">Modo Livre</button>
-        <button id="tab-scenarios" class="tab">Cenarios</button>
+        <button id="mode-game" class="tab active">Jogo</button>
+        <button id="mode-analysis" class="tab">Analise</button>
       </div>
       <div class="lang">
         <button id="lang-pt" class="lang-btn">PT</button>
@@ -24,55 +24,65 @@
     </div>
   </header>
 
-  <main class="layout">
-    <!-- Sidebar de controles (sempre visivel) -->
-    <aside class="sidebar">
-      <section class="ctrl-group">
-        <h3 id="h-pathogen">🦠 Patogeno</h3>
-        <div id="pathogen-controls"></div>
-      </section>
+  <!-- ===================== MODO JOGO (montado por src/game) ================ -->
+  <div id="game-root"></div>
 
-      <section class="ctrl-group">
-        <h3 id="h-cities">🏙️ Cidades</h3>
-        <div id="city-controls"></div>
-      </section>
-
-      <section class="ctrl-group">
-        <h3 id="h-interventions">🛡️ Intervencoes</h3>
-        <div id="intervention-controls"></div>
-      </section>
-
-      <div class="run-bar">
-        <button id="btn-run" class="primary">Simular</button>
-        <button id="btn-reset" class="ghost">Reiniciar</button>
+  <!-- ===================== MODO ANALISE (painel-dashboard) ================= -->
+  <div id="analysis-root" style="display:none">
+    <div class="analysis-subtabs">
+      <div class="tabs">
+        <button id="tab-sandbox" class="tab active">Modo Livre</button>
+        <button id="tab-scenarios" class="tab">Cenarios</button>
       </div>
-    </aside>
+    </div>
 
-    <!-- Conteudo principal -->
-    <section class="content">
-      <div id="scenarios-panel" style="display:none">
-        <h3>Cenarios guiados</h3>
-        <div id="scenario-list" class="scenario-list"></div>
-      </div>
-      <div id="sandbox-panel"></div>
+    <main class="layout">
+      <!-- Sidebar de controles (sempre visivel) -->
+      <aside class="sidebar">
+        <section class="ctrl-group">
+          <h3 id="h-pathogen">🦠 Patogeno</h3>
+          <div id="pathogen-controls"></div>
+        </section>
 
-      <div id="scenario-result" class="scenario-result" style="display:none"></div>
+        <section class="ctrl-group">
+          <h3 id="h-cities">🏙️ Cidades</h3>
+          <div id="city-controls"></div>
+        </section>
 
-      <div id="kpis" class="kpis"></div>
+        <section class="ctrl-group">
+          <h3 id="h-interventions">🛡️ Intervencoes</h3>
+          <div id="intervention-controls"></div>
+        </section>
 
-      <div class="charts-grid">
-        <canvas id="chart-epidemic" class="chart"></canvas>
-        <canvas id="chart-rt" class="chart"></canvas>
-        <canvas id="chart-hospital" class="chart"></canvas>
-        <div class="side-panels">
-          <canvas id="map" class="map"></canvas>
-          <div id="explanation" class="explanation"></div>
+        <div class="run-bar">
+          <button id="btn-reset" class="ghost">Reiniciar</button>
         </div>
-      </div>
+      </aside>
 
-      <p id="disclaimer" class="disclaimer"></p>
-    </section>
-  </main>
+      <!-- Conteudo principal -->
+      <section class="content">
+        <div id="scenarios-panel" style="display:none">
+          <h3>Cenarios guiados</h3>
+          <div id="scenario-list" class="scenario-list"></div>
+        </div>
+        <div id="sandbox-panel"></div>
+
+        <div id="scenario-result" class="scenario-result" style="display:none"></div>
+
+        <div id="kpis" class="kpis"></div>
+
+        <div class="charts-grid">
+          <canvas id="chart-epidemic" class="chart"></canvas>
+          <canvas id="chart-rt" class="chart"></canvas>
+          <canvas id="chart-hospital" class="chart"></canvas>
+          <canvas id="chart-incidence" class="chart"></canvas>
+        </div>
+        <div id="explanation" class="explanation"></div>
+
+        <p id="disclaimer" class="disclaimer"></p>
+      </section>
+    </main>
+  </div>
 
   <script type="module" src="./src/main.js"></script>
 </body>

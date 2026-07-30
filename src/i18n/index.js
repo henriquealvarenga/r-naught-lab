@@ -19,6 +19,17 @@ export function t(key) {
   return dict[key] ?? key;
 }
 
+/**
+ * Traduz e interpola placeholders `{chave}` com valores de `params`.
+ * Ex.: tf('news.detect.head', { city: 'Cidade A' }) -> 'Novo patogeno ... Cidade A'.
+ * Usado pelo Modo Jogo (SNN, relatorio) para manchetes com numeros/nomes.
+ */
+export function tf(key, params) {
+  const str = t(key);
+  if (!params) return str;
+  return str.replace(/\{(\w+)\}/g, (m, k) => (params[k] != null ? params[k] : m));
+}
+
 /** Idioma atual ('pt' | 'en'). */
 export function getLanguage() {
   return current;

@@ -33,47 +33,6 @@ export function renderKPIs(container, result) {
   );
 }
 
-/** Mapa esquematico: nos = cidades, tamanho ~ populacao, cor ~ pico de I. */
-export function renderMap(canvas, result) {
-  const ctx = canvas.getContext('2d');
-  const dpr = window.devicePixelRatio || 1;
-  const W = canvas.clientWidth, H = canvas.clientHeight;
-  canvas.width = W * dpr; canvas.height = H * dpr;
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.clearRect(0, 0, W, H);
-
-  const n = result.perCity.length;
-  const nodes = result.perCity.map((city, i) => {
-    const angle = (Math.PI * 2 * i) / n - Math.PI / 2;
-    const cx = W / 2 + Math.cos(angle) * Math.min(W, H) * 0.28;
-    const cy = H / 2 + Math.sin(angle) * Math.min(W, H) * 0.28;
-    let peakI = 0, pop = 0;
-    for (const p of city.series) if (p.I > peakI) peakI = p.I;
-    pop = city.series[0].N;
-    return { cx, cy, r: 14 + Math.sqrt(pop) / 260, peakFrac: pop ? peakI / pop : 0, id: city.id };
-  });
-
-  // Arestas (mobilidade) — desenha todas com espessura leve
-  ctx.strokeStyle = '#cbd5e1';
-  ctx.lineWidth = 1.5;
-  for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) {
-    ctx.beginPath(); ctx.moveTo(nodes[i].cx, nodes[i].cy); ctx.lineTo(nodes[j].cx, nodes[j].cy); ctx.stroke();
-  }
-
-  // Nos
-  for (const nd of nodes) {
-    const intensity = Math.min(1, nd.peakFrac * 6);
-    const r = Math.round(220 * intensity + 30);
-    ctx.fillStyle = `rgb(${r}, ${Math.round(80 - 60 * intensity)}, ${Math.round(90 - 70 * intensity)})`;
-    ctx.beginPath(); ctx.arc(nd.cx, nd.cy, nd.r, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#fff';
-    ctx.font = '600 13px system-ui, sans-serif';
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(nd.id, nd.cx, nd.cy);
-    ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
-  }
-}
-
 /**
  * Painel interpretativo: gera 2-4 frases explicando o resultado com base nas
  * metricas — o "momento eureca" verbalizado.

@@ -92,15 +92,20 @@ export function derivatives(y, t, ctx, dy) {
 
     const lambda = betaEff * (prev[i] + coupling * imported);
 
+    // gamma efetivo: isolar casos (testar-rastrear-isolar) encurta o periodo infeccioso.
+    const gammaEff = gamma * mod.gammaMult[i];
+
     const newInf = lambda * S;
     const vax = mod.vaxRate[i] * S;          // S -> R por vacinacao
     const EtoI = sigma * E;
-    const Iout = gamma * I;
+    const Iout = gammaEff * I;
     const ItoH = hospRate * Iout;
     const ItoR = (1 - hospRate) * Iout;
 
-    // Colapso hospitalar: excesso acima da capacidade morre a taxa extra.
-    const overflow = ctx.overflowMortality * Math.max(0, H - ctx.capacity[i]);
+    // Colapso hospitalar: excesso acima da capacidade efetiva morre a taxa extra.
+    // A capacidade pode ser expandida no tempo (intervencao 'beds').
+    const capEff = ctx.capacity[i] * mod.capacityMult[i];
+    const overflow = ctx.overflowMortality * Math.max(0, H - capEff);
     const Hdeath = deltaH * H + overflow;
     const Hrecover = rho * H;
 

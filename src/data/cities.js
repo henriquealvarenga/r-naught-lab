@@ -12,6 +12,12 @@
  *   connectivity      [0..1] intensidade de transporte/mobilidade -> matriz M
  *   hospitalCapacity  leitos de alta complexidade disponiveis (surto)
  *   labelKey/descKey  chaves de i18n para a UI
+ *
+ * TODO (AVALIAR COM DETALHES DEPOIS): os valores de `hospitalCapacity` (A=12000,
+ * B=5200, C=1200) sao PROVISORIOS e, diferente dos demais campos, NAO tem fonte
+ * documentada em docs/DATA_REFERENCE_INTERNAL.md. Parecem altos para UTI/alta
+ * complexidade (~1 leito/1.000 hab; UTI real ~0,2-0,4/1.000). Reavaliar com
+ * fonte rastreavel e decidir se representam UTI/alta complexidade ou leitos totais.
  */
 
 export const CITIES = [

@@ -7,7 +7,9 @@
  */
 
 import { t } from '../i18n/index.js';
-import { updatePathogenParam, updateCityParam, setPathogen } from '../state/store.js';
+import {
+  updatePathogenParam, updateCityParam, setPathogen, setSelectedCity, getState,
+} from '../state/store.js';
 import { PATHOGENS } from '../data/pathogens.js';
 
 /** Descricao declarativa dos sliders do patogeno. */
@@ -65,7 +67,11 @@ export function renderPathogenControls(container, config) {
     if (p.id === config.pathogen.id) opt.selected = true;
     sel.append(opt);
   }
-  sel.addEventListener('change', () => setPathogen(sel.value));
+  sel.addEventListener('change', () => {
+    setPathogen(sel.value);
+    // adia o re-render p/ o 'change' propagar ate o live-run antes do <select> sumir
+    requestAnimationFrame(() => renderPathogenControls(container, config));
+  });
   container.append(sel);
 
   // Via de transmissao (afeta o peso do saneamento)
@@ -87,26 +93,52 @@ export function renderPathogenControls(container, config) {
   }
 }
 
-/** Renderiza os controles por cidade. */
+/**
+ * Renderiza os controles da cidade em foco + um seletor A/B/C. A cidade em foco
+ * vive no store (`selectedCityId`) para que os GRAFICOS do Modo Analise mostrem
+ * a mesma cidade. A simulacao continua metapopulacional (as 3 cidades acopladas);
+ * aqui so escolhemos qual editar/exibir por vez.
+ */
 export function renderCityControls(container, config) {
   container.innerHTML = '';
-  for (const city of config.cities) {
-    const card = document.createElement('div');
-    card.className = 'city-card';
-    const title = document.createElement('h4');
-    title.textContent = t(city.labelKey);
-    const desc = document.createElement('p');
-    desc.className = 'city-desc';
-    desc.textContent = t(city.descKey);
-    card.append(title, desc);
-    for (const s of CITY_SLIDERS) {
-      card.append(slider({
-        labelText: t('param.' + s.key),
-        value: city[s.key],
-        min: s.min, max: s.max, step: s.step, pct: s.pct,
-        onInput: (v) => updateCityParam(city.id, s.key, v),
-      }));
-    }
-    container.append(card);
+  let selectedCityId = getState().selectedCityId;
+  if (!config.cities.some((c) => c.id === selectedCityId)) {
+    selectedCityId = config.cities[0].id;
+    setSelectedCity(selectedCityId);
   }
+  const city = config.cities.find((c) => c.id === selectedCityId);
+
+  // Seletor de cidade (mesma cara do seletor de preset do patogeno).
+  const sel = document.createElement('select');
+  sel.className = 'preset-select';
+  for (const c of config.cities) {
+    const opt = document.createElement('option');
+    opt.value = c.id; opt.textContent = t(c.labelKey);
+    if (c.id === selectedCityId) opt.selected = true;
+    sel.append(opt);
+  }
+  sel.addEventListener('change', () => {
+    setSelectedCity(sel.value);
+    // adia o re-render p/ o 'change' propagar ate o live-run (senao o <select>
+    // some antes de bubblar e os graficos nao seguem a cidade escolhida)
+    requestAnimationFrame(() => renderCityControls(container, config));
+  });
+  container.append(sel);
+
+  // Cartao da cidade escolhida.
+  const card = document.createElement('div');
+  card.className = 'city-card';
+  const desc = document.createElement('p');
+  desc.className = 'city-desc';
+  desc.textContent = t(city.descKey);
+  card.append(desc);
+  for (const s of CITY_SLIDERS) {
+    card.append(slider({
+      labelText: t('param.' + s.key),
+      value: city[s.key],
+      min: s.min, max: s.max, step: s.step, pct: s.pct,
+      onInput: (v) => updateCityParam(city.id, s.key, v),
+    }));
+  }
+  container.append(card);
 }
