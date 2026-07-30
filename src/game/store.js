@@ -31,11 +31,27 @@ export const END_FRAC = 0.004;
 /** Semente de infecciosos no dia 0: o paciente zero. */
 const SEED_INFECTIONS = 1;
 
+/**
+ * DETECCAO — a partida NAO comeca no dia 0, e sim no dia em que a vigilancia
+ * flagra o surto (I >= DETECT_I). Motivo (medido em 2026-07-30): com 1 paciente
+ * zero em ~12M de habitantes, a epidemia so fica visivel por volta do dia 60; os
+ * primeiros ~40 dias sao tempo morto e, pior, tornam o TIMING da resposta
+ * inerte (comprar no dia 0 ou no dia 60 dava o mesmo numero de mortes).
+ * Comecando na deteccao, o mesmo par de cartas varia de 3,9k a 324k obitos
+ * conforme o atraso — que e a licao central de saude publica.
+ * Os dias silenciosos continuam simulados e aparecem nos graficos: o aluno ve
+ * que, quando se detecta, ja houve semanas de transmissao invisivel.
+ */
+const DETECT_I = 300;
+/** Teto de dias silenciosos: patogeno lento demais comeca no dia 0 mesmo. */
+const MAX_SILENT_DAYS = 120;
+
 const state = {
   cityId: null,
   presetId: 'resp_moderate',
   pathogen: clonePathogen('resp_moderate'),
   dayIndex: 0,
+  startDay: 0,         // dia da deteccao: onde a partida abre e piso do rewind
   budget: START_BUDGET,
   interventions: [],   // [{ cardId, type, value, cost, startDay, cities:'all' }]
   // derivados (recomputados por sync/refresh):
@@ -115,7 +131,15 @@ function computeTimeline() {
       day, S: p.S, E: p.E, I: p.I, H: p.H, R: p.R, D: p.D, N: p.N,
       occ, rt: p.Rt, deaths: p.D, casos: p.E + p.I + p.H + p.R + p.D,
       peakI, peakOcc, active, cityName, r0, routeLabel,
+      // dia da deteccao + dias decorridos de partida: regras que falam de
+      // "tempo de resposta" devem contar a partir da deteccao, nao do dia 0.
+      startDay: state.startDay, elapsed: day - state.startDay,
     };
+    // Antes da deteccao nao existe noticiario: ninguem sabe que ha um surto.
+    // (Os picos acima continuam somando — sao fatos epidemiologicos e aparecem
+    // nos graficos; so as MANCHETES e que comecam na deteccao.)
+    if (day < state.startDay) continue;
+
     for (const rule of NEWS_RULES) {
       if (seen.has(rule.id)) continue;
       let hit = false;
@@ -160,14 +184,29 @@ export function setRoute(route) {
   state.presetId = 'custom';
 }
 
+/**
+ * Primeiro dia em que a vigilancia flagraria o surto (I >= DETECT_I).
+ * Patogeno que nunca chega la (ou demora demais) comeca no dia 0: nesse caso
+ * nao ha "tempo morto" a pular — a epidemia e lenta por natureza.
+ */
+function detectionDay(series) {
+  const limit = Math.min(series.length - 1, MAX_SILENT_DAYS);
+  for (let d = 0; d <= limit; d++) if (series[d].I >= DETECT_I) return d;
+  return 0;
+}
+
 /** Tela 3: (re)iniciar a partida com a cidade e o patogeno escolhidos. */
 export function initOutbreak() {
-  state.dayIndex = 0;   // abre no dia 0: semente limpa (20 infecciosos, 0 recuperados)
+  state.dayIndex = 0;
+  state.startDay = 0;
   state.budget = START_BUDGET;
   state.interventions = [];
   state.result = null;
   state._resultSig = null;
-  sync();
+  sync();                                   // roda a partida "natural" (sem cartas)
+  state.startDay = detectionDay(state.result.perCity[0].series);
+  state.dayIndex = state.startDay;          // abre no dia da DETECCAO
+  computeTimeline();                        // feed/picos coerentes com o dia de abertura
 }
 
 /** Avanca um dia. Retorna { over, newPlantoes }. */
@@ -179,12 +218,26 @@ export function advanceDay() {
   return { over: isOver(), newPlantoes };
 }
 
+/**
+ * Dias de partida decorridos desde a deteccao (o "T+" que a UI mostra).
+ * Usado pelas travas de carta (ex.: vacina so a partir de T+60).
+ */
+export function elapsedDays() { return state.dayIndex - state.startDay; }
+
+/** A carta ja foi liberada? (cartas com `unlockAfter` so valem depois de T+N). */
+export function isUnlocked(cardId) {
+  const card = cardById(cardId);
+  if (!card) return false;
+  return card.unlockAfter == null || elapsedDays() >= card.unlockAfter;
+}
+
 /** Compra uma carta do baralho (append + re-simulacao). Retorna sucesso. */
 export function buyCard(cardId) {
   const card = cardById(cardId);
   if (!card) return false;
   if (state.interventions.some((iv) => iv.cardId === cardId)) return false;
   if (state.budget < card.cost) return false;
+  if (!isUnlocked(cardId)) return false;
   state.budget -= card.cost;
   state.interventions.push({
     cardId, type: card.type, value: card.value, cost: card.cost,
@@ -194,9 +247,12 @@ export function buyCard(cardId) {
   return true;
 }
 
-/** Volta `days` dias: trunca intervencoes com startDay > alvo (orcamento devolvido). */
+/**
+ * Volta `days` dias: trunca intervencoes com startDay > alvo (orcamento devolvido).
+ * Piso = dia da deteccao: nao da para voltar para antes do inicio da partida.
+ */
 export function rewind(days) {
-  const target = Math.max(0, state.dayIndex - days);
+  const target = Math.max(state.startDay, state.dayIndex - days);
   const kept = [];
   for (const iv of state.interventions) {
     if (iv.startDay > target) state.budget += iv.cost;
@@ -233,7 +289,7 @@ export function latestHeadline() {
   return state.feed.length ? state.feed[state.feed.length - 1] : null;
 }
 
-export function canRewind() { return state.dayIndex > 1; }
+export function canRewind() { return state.dayIndex > state.startDay; }
 
 export function population() { return cityById(state.cityId).population; }
 export function initialCapacity() { return cityById(state.cityId).hospitalCapacity; }
@@ -252,9 +308,10 @@ function isOver() {
   const p = dayData();
   const active = p.E + p.I + p.H;
   const { activePeak } = state.peaks;
+  const el = elapsedDays();   // carencia conta a partir da deteccao, nao do dia 0
   return state.dayIndex >= HORIZON
-    || (active < 1 && state.dayIndex > 10)
-    || (state.dayIndex > 20 && activePeak > 500 && active < END_FRAC * activePeak);
+    || (active < 1 && el > 10)
+    || (el > 20 && activePeak > 500 && active < END_FRAC * activePeak);
 }
 
 export { isOver };

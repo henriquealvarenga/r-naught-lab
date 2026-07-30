@@ -3,7 +3,7 @@
  * Every user-facing string flows through here (never hardcode in the UI).
  */
 export default {
-  'app.title': 'Epidemiological Simulator — Educational',
+  'app.title': 'R Naught Lab',
   'app.subtitle': 'Understand how demographic and viral parameters shape an epidemic',
   'app.mode.sandbox': 'Sandbox',
   'app.mode.scenarios': 'Scenarios',
@@ -101,6 +101,7 @@ export default {
   // Screen 1 — Territory
   'game.screen1.title': 'Where does patient zero appear?',
   'game.screen1.sub': 'Each territory has a profile that changes the difficulty — density speeds up contagion, sanitation protects against waterborne routes, beds decide when hospitals collapse.',
+  'game.screen1.cover': '← Home',
   'game.screen1.next': 'Choose pathogen →',
   'game.city.inhabitants': 'people',
   'game.city.stat.density': 'Density',
@@ -114,7 +115,6 @@ export default {
 
   // Screen 2 — Pathogen
   'game.screen2.title': 'Define the pathogen',
-  'game.screen2.sub': 'Start from a preset and tweak freely. Note that transmissibility (R₀) and severity (lethality) are different things.',
   'game.screen2.derivedTitle': 'What this means',
   'game.derived.herd': 'Herd immunity (1−1/R₀)',
   'game.derived.double': 'Doubling time (early)',
@@ -130,6 +130,10 @@ export default {
   'game.level.low': 'low',
   'game.screen2.back': '← Territory',
   'game.screen2.start': 'Start outbreak ▶',
+
+  'game.real.title': 'Compare with real diseases',
+  'game.real.yours': 'Your pathogen',
+  'game.real.note': 'R₀ as estimated in the literature; it varies widely with context, contact and study.',
 
   // Screen 3 — Cockpit
   'game.day': 'Day',
@@ -159,9 +163,9 @@ export default {
   'game.chart.zoomTitle': 'Hospital pressure',
   'game.chart.zoomAxis': 'Clinical zoom · Y axis fixed 0 to 2.5× bed capacity',
   'game.chart.infZoomTitle': 'Infectious — zoom',
-  'game.chart.infZoomAxis': 'Auto zoom · Y axis steps up and fits the infectious peak',
+  'game.chart.infZoomAxis': 'Auto zoom · Y axis steps up to the infectious peak · X axis follows the current day',
   'game.chart.hospZoomTitle': 'Hospital pressure — zoom',
-  'game.chart.hospZoomAxis': 'Auto zoom · Y axis steps up and fits the hospitalized peak',
+  'game.chart.hospZoomAxis': 'Auto zoom · Y axis steps up to the hospitalized peak · X axis follows the current day',
   'game.chart.capacity': 'Capacity',
   'game.chart.deathsCum': 'Deaths (cum.)',
   'game.deck.title': 'Public-health interventions',
@@ -197,6 +201,30 @@ export default {
   'game.end.playAgain': '↺ Play again',
   'game.end.review': 'See curve',
 
+  // Cover (Screen 0)
+  'game.cover.title': 'R Naught',
+  'game.cover.subtitle': 'Lab',
+  'game.cover.kicker': 'Causality in epidemics',
+  'game.cover.lede': 'Pick a territory, design a pathogen and face the outbreak day by day. The goal is not to wipe the virus out — it is to understand why each decision bends the curve.',
+  'game.cover.author': 'Prof. Henrique Alvarenga da Silva — Afya',
+  'game.cover.start': '▶  Start the outbreak',
+  'game.cover.help': '?  How it works',
+  'game.cover.card.timing.title': 'Timing beats strength',
+  'game.cover.card.timing.desc': 'The budget is finite and every measure has a price. The same cards bought early or late separate a few thousand deaths from a few hundred thousand.',
+  'game.cover.card.causality.title': 'Causality, not luck',
+  'game.cover.card.causality.desc': 'A deterministic SEIHRD model with metapopulation runs underneath. The same choices always give the same result — so you can rewind and test the alternative.',
+  'game.cover.card.visible.title': 'See the invisible',
+  'game.cover.card.visible.desc': 'Effective R, hospital occupancy and the curve taking shape in real time. By the time an outbreak is detected it has spread for weeks — and the chart shows it.',
+  'game.cover.howto.title': 'How it works',
+  'game.cover.howto.territory.title': '1. Territory',
+  'game.cover.howto.territory.desc': 'Three cities with different density, sanitation, transport and hospital beds. The profile you pick changes the difficulty before the virus even exists.',
+  'game.cover.howto.pathogen.title': '2. Pathogen',
+  'game.cover.howto.pathogen.desc': 'Tune R₀, latent and infectious periods, severity and transmission route. Transmissibility and lethality are independent things.',
+  'game.cover.howto.outbreak.title': '3. Outbreak',
+  'game.cover.howto.outbreak.desc': 'The clock runs. Buy interventions when you judge it necessary, follow the newsroom, and rewind to test what would have happened.',
+  'game.cover.howto.note': 'There is no score for “winning”. The final report shows deaths, days in collapse and peak — so you can compare strategies, not beat a record.',
+  'game.cover.howto.close': 'Got it',
+
   // Intervention deck
   'game.deck.distancing.name': 'Social distancing',
   'game.deck.distancing.desc': 'Cuts contacts: −45% on β.',
@@ -209,7 +237,8 @@ export default {
   'game.deck.vaccination.name': 'Vaccination campaign',
   'game.deck.vaccination.desc': 'Moves 1.2%/day of S → immune.',
   'game.deck.beds.name': 'Expand beds (ICU)',
-  'game.deck.beds.desc': '+50% hospital capacity.',
+  'game.deck.beds.desc': '+50% beds. Weak on its own: it only helps once the curve is already flattened.',
+  'game.deck.locked': '🔒 In development — available from day {day}',
 
   // Report quiz
   'quiz.rt.q': 'Why does Rₜ fall below 1 even without intervention?',
@@ -244,7 +273,7 @@ export default {
 
   // SNN — breaking
   'news.detect.head': 'New pathogen identified in {city}',
-  'news.detect.detail': 'Surveillance confirmed a new agent: R₀ ≈ {r0}, {route} transmission. R₀ tells how many people a single case infects in a fully susceptible population — the higher it is, the faster the spread.',
+  'news.detect.detail': 'Surveillance confirmed a new agent: R₀ ≈ {r0}, {route} transmission. Note the date: the first case happened {silent} days ago — the virus spread invisibly all that time, and roughly {cases} people are already infected. When an outbreak is detected, it is never just beginning. R₀ tells how many people a single case infects in a fully susceptible population: the higher it is, the faster the spread.',
   'news.firstdeath.head': 'First death from the disease recorded',
   'news.firstdeath.detail': 'The outbreak claims its first life. The fatality ratio (IFR) measures the fraction of the infected who die — different from R₀, which measures how easily the virus spreads. A low-transmission pathogen can be far more lethal, and vice versa.',
   'news.collapse.head': 'Health system COLLAPSES: beds run out',

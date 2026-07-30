@@ -3,8 +3,8 @@
  * Toda string visivel ao usuario passa por aqui (nunca hardcode na UI).
  */
 export default {
-  'app.title': 'Simulador Epidemiologico — Educacional',
-  'app.subtitle': 'Entenda como parametros demograficos e virais moldam uma epidemia',
+  'app.title': 'R Naught Lab',
+  'app.subtitle': 'Entenda como parâmetros demográficos e virais moldam uma epidemia',
   'app.mode.sandbox': 'Modo Livre',
   'app.mode.scenarios': 'Cenarios',
   'app.run': 'Simular',
@@ -110,6 +110,7 @@ export default {
   // Tela 1 — Território
   'game.screen1.title': 'Onde o paciente zero surge?',
   'game.screen1.sub': 'Cada território tem um perfil que muda a dificuldade — densidade acelera o contágio, saneamento protege contra rotas hídricas, leitos definem quando o hospital colapsa.',
+  'game.screen1.cover': '← Início',
   'game.screen1.next': 'Escolher patógeno →',
   'game.city.inhabitants': 'hab.',
   'game.city.stat.density': 'Densidade',
@@ -123,7 +124,6 @@ export default {
 
   // Tela 2 — Patógeno
   'game.screen2.title': 'Defina o patógeno',
-  'game.screen2.sub': 'Comece por um preset e ajuste à vontade. Repare que transmissibilidade (R₀) e severidade (letalidade) são coisas diferentes.',
   'game.screen2.derivedTitle': 'O que isso significa',
   'game.derived.herd': 'Imunidade de rebanho (1−1/R₀)',
   'game.derived.double': 'Tempo p/ dobrar (início)',
@@ -139,6 +139,10 @@ export default {
   'game.level.low': 'baixa',
   'game.screen2.back': '← Território',
   'game.screen2.start': 'Iniciar surto ▶',
+
+  'game.real.title': 'Compare com doenças reais',
+  'game.real.yours': 'Seu patógeno',
+  'game.real.note': 'R₀ estimado na literatura; varia muito com contexto, contato e estudo.',
 
   // Tela 3 — Cockpit
   'game.day': 'Dia',
@@ -168,9 +172,9 @@ export default {
   'game.chart.zoomTitle': 'Pressão no hospital',
   'game.chart.zoomAxis': 'Zoom clínico · eixo Y fixo de 0 a 2,5× a capacidade de leitos',
   'game.chart.infZoomTitle': 'Infecciosos — zoom',
-  'game.chart.infZoomAxis': 'Zoom automático · eixo Y sobe em degraus e ajusta ao pico de infecciosos',
+  'game.chart.infZoomAxis': 'Zoom automático · eixo Y sobe em degraus até o pico de infecciosos · eixo X acompanha o dia atual',
   'game.chart.hospZoomTitle': 'Pressão no hospital — zoom',
-  'game.chart.hospZoomAxis': 'Zoom automático · eixo Y sobe em degraus e ajusta ao pico de hospitalizados',
+  'game.chart.hospZoomAxis': 'Zoom automático · eixo Y sobe em degraus até o pico de hospitalizados · eixo X acompanha o dia atual',
   'game.chart.capacity': 'Capacidade',
   'game.chart.deathsCum': 'Óbitos (acum.)',
   'game.deck.title': 'Intervenções de saúde pública',
@@ -206,6 +210,30 @@ export default {
   'game.end.playAgain': '↺ Jogar de novo',
   'game.end.review': 'Ver curva',
 
+  // Capa (Tela 0)
+  'game.cover.title': 'R Naught',
+  'game.cover.subtitle': 'Lab',
+  'game.cover.kicker': 'Causalidade em epidemias',
+  'game.cover.lede': 'Escolha um território, projete um patógeno e enfrente o surto dia a dia. O objetivo não é exterminar o vírus — é entender por que cada decisão muda a curva.',
+  'game.cover.author': 'Prof. Henrique Alvarenga da Silva — Afya',
+  'game.cover.start': '▶  Começar o surto',
+  'game.cover.help': '?  Como funciona',
+  'game.cover.card.timing.title': 'A hora importa mais que a força',
+  'game.cover.card.timing.desc': 'O orçamento é finito e cada medida tem preço. As mesmas cartas compradas cedo ou tarde separam alguns milhares de óbitos de algumas centenas de milhares.',
+  'game.cover.card.causality.title': 'Causalidade, não sorte',
+  'game.cover.card.causality.desc': 'Por trás roda um modelo SEIHRD determinístico com metapopulação. As mesmas escolhas dão sempre o mesmo resultado — dá para voltar no tempo e testar a alternativa.',
+  'game.cover.card.visible.title': 'Ver o invisível',
+  'game.cover.card.visible.desc': 'R efetivo, ocupação hospitalar e a curva se formando em tempo real. Quando o surto é detectado, ele já circulava há semanas — e isso aparece no gráfico.',
+  'game.cover.howto.title': 'Como funciona',
+  'game.cover.howto.territory.title': '1. Território',
+  'game.cover.howto.territory.desc': 'Três cidades com densidade, saneamento, transporte e leitos diferentes. O perfil escolhido muda a dificuldade antes mesmo de o vírus existir.',
+  'game.cover.howto.pathogen.title': '2. Patógeno',
+  'game.cover.howto.pathogen.desc': 'Ajuste R₀, períodos de latência e transmissão, gravidade e via de contágio. Transmissibilidade e letalidade são coisas independentes.',
+  'game.cover.howto.outbreak.title': '3. Surto',
+  'game.cover.howto.outbreak.desc': 'O relógio corre. Compre intervenções quando julgar necessário, acompanhe o noticiário e volte no tempo para testar o que teria acontecido.',
+  'game.cover.howto.note': 'Não há pontuação por “vencer”. O relatório final mostra óbitos, dias de colapso e pico — para você comparar estratégias, não para bater recorde.',
+  'game.cover.howto.close': 'Entendi',
+
   // Baralho de intervenções
   'game.deck.distancing.name': 'Distanciamento social',
   'game.deck.distancing.desc': 'Corta contatos: −45% no β.',
@@ -218,7 +246,8 @@ export default {
   'game.deck.vaccination.name': 'Campanha de vacinação',
   'game.deck.vaccination.desc': 'Move 1,2%/dia de S → imunes.',
   'game.deck.beds.name': 'Expandir leitos (UTI)',
-  'game.deck.beds.desc': '+50% de capacidade hospitalar.',
+  'game.deck.beds.desc': '+50% de leitos. Sozinha muda pouco: só ajuda se a curva já estiver achatada.',
+  'game.deck.locked': '🔒 Em desenvolvimento — disponível a partir do dia {day}',
 
   // Quiz do relatório
   'quiz.rt.q': 'Por que Rₜ cai abaixo de 1 mesmo sem intervenção?',
@@ -253,7 +282,7 @@ export default {
 
   // SNN — plantões
   'news.detect.head': 'Novo patógeno identificado em {city}',
-  'news.detect.detail': 'A vigilância confirmou um novo agente: R₀ ≈ {r0}, transmissão {route}. O R₀ diz quantas pessoas um único doente infecta numa população 100% suscetível — quanto maior, mais rápido o espalhamento.',
+  'news.detect.detail': 'A vigilância confirmou um novo agente: R₀ ≈ {r0}, transmissão {route}. Atenção à data: o primeiro caso ocorreu há {silent} dias — o vírus circulou invisível esse tempo todo, e já há cerca de {cases} pessoas infectadas. Quando um surto é detectado, ele nunca está começando. O R₀ diz quantas pessoas um único doente infecta numa população 100% suscetível: quanto maior, mais rápido o espalhamento.',
   'news.firstdeath.head': 'Registrado o primeiro óbito pela doença',
   'news.firstdeath.detail': 'O surto cobra a primeira vida. A letalidade (IFR) mede a fração dos infectados que morre — é diferente do R₀, que mede o quão fácil o vírus se espalha. Um patógeno pouco transmissível pode ser bem mais letal, e vice-versa.',
   'news.collapse.head': 'Sistema de saúde COLAPSA: faltam leitos',

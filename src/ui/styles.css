@@ -126,9 +126,13 @@ body {
 .game-app .screen.active { display:block; }
 @keyframes fade { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
 @media (prefers-reduced-motion: reduce) { .game-app .screen { animation:none; } }
-.game-app .screen-head { margin-bottom:18px; }
-.game-app .screen-head h2 { font-size:23px; margin:0 0 4px; letter-spacing:-.4px; text-wrap:balance; }
-.game-app .screen-head p { margin:0; color:var(--ink-2); max-width:60ch; }
+/* Cabecalho das Telas 1 e 2: centralizado, e o subtitulo SEM teto de 60ch —
+   esse limite forcava 3 linhas num monitor largo, comendo altura de tela a
+   toa. Sem ele a quebra passa a depender so da largura disponivel (uma linha
+   no desktop, duas ou tres no celular). */
+.game-app .screen-head { margin-bottom:18px; text-align:center; }
+.game-app .screen-head h2 { font-size:23px; margin:0 0 6px; letter-spacing:-.4px; text-wrap:balance; }
+.game-app .screen-head p { margin:0 auto; color:var(--ink-2); max-width:none; text-wrap:pretty; }
 .game-app .panel { background:var(--panel); border:1px solid var(--line); border-radius:var(--r); box-shadow:var(--shadow); }
 
 /* tela 1 — cidades */
@@ -171,8 +175,33 @@ body {
 .game-app .derived .drow:last-child { border:0; }
 .game-app .derived .drow b { font-family:var(--mono); font-variant-numeric:tabular-nums; }
 
+/* comparador de R0 com doencas reais (Tela 2) */
+.game-app .realdis { margin-top:16px; padding-top:15px; border-top:1px solid var(--line); }
+.game-app .realdis h5 { margin:0 0 11px; font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:var(--ink-3); font-weight:600; }
+.game-app .realdis-list { display:flex; flex-direction:column; gap:7px; }
+/* barra com 110px: a 62px original, um R₀ de 2,5 numa escala ate 18 virava um
+   tracinho de ~9px e a comparacao — que e o ponto do painel — sumia. */
+.game-app .rd-row { display:grid; grid-template-columns:minmax(0,1fr) 110px auto; gap:10px; align-items:center; font-size:12px; color:var(--ink-2); }
+.game-app .rd-row.is-you { color:var(--ink); font-weight:600; }
+.game-app .rd-name { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.game-app .rd-bar { height:6px; border-radius:4px; background:var(--panel-2); overflow:hidden; }
+.game-app .rd-bar i { display:block; height:100%; border-radius:4px; background:var(--ink-3); }
+.game-app .rd-row.is-you .rd-bar i { background:var(--accent); }
+.game-app .rd-val { font-family:var(--mono); font-size:11px; font-variant-numeric:tabular-nums; color:var(--ink-3); }
+.game-app .rd-row.is-you .rd-val { color:var(--accent); }
+.game-app .realdis-note { margin:11px 0 0; font-size:10.5px; line-height:1.45; color:var(--ink-3); }
+
 /* botoes */
 .game-app .actions { display:flex; justify-content:space-between; gap:12px; margin-top:22px; }
+
+/* Barra de acoes GRUDENTA no rodape (Telas 1 e 2): os botoes de navegacao
+   seguem alcancaveis enquanto o aluno rola os cards / sliders. */
+.game-app .screen .actions {
+  position:sticky; bottom:0; z-index:5; margin-top:18px;
+  padding:14px 0 16px;
+  background:linear-gradient(to top, var(--bg) 72%, transparent);
+  border-top:1px solid var(--line);
+}
 .game-app .btn { font:inherit; font-size:14px; font-weight:600; padding:11px 20px; border-radius:10px; cursor:pointer; border:1.5px solid transparent; }
 .game-app .btn-primary { background:var(--accent); color:var(--accent-ink); }
 .game-app .btn-primary:hover { filter:brightness(1.06); }
@@ -201,8 +230,10 @@ body {
 .game-app .speeds { display:flex; background:var(--panel-2); border:1.5px solid var(--line); border-radius:9px; overflow:hidden; }
 .game-app .speeds button { font:inherit; font-size:12px; font-weight:700; padding:8px 11px; border:0; background:transparent; color:var(--ink-3); cursor:pointer; font-variant-numeric:tabular-nums; }
 .game-app .speeds button[aria-pressed="true"] { background:var(--accent); color:var(--accent-ink); }
-.game-app .budget { margin-left:auto; min-width:190px; }
-.game-app .budget .brow { display:flex; justify-content:space-between; font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:var(--ink-3); margin-bottom:5px; }
+.game-app .budget { margin-left:auto; min-width:215px; }
+/* gap:14px evita o rotulo encostar no valor ("ORÇAMENTO DE RESPOSTA100 PTS") */
+.game-app .budget .brow { display:flex; justify-content:space-between; gap:14px; font-size:11px; text-transform:uppercase; letter-spacing:.6px; color:var(--ink-3); margin-bottom:5px; }
+.game-app .budget .brow b { white-space:nowrap; }
 .game-app .budget .brow b { font-family:var(--mono); color:var(--ink); font-size:13px; letter-spacing:0; }
 .game-app .budget .meter { height:8px; }
 .game-app .budget .meter i { background:linear-gradient(90deg, var(--accent), #8b97ff); transition:width .3s; }
@@ -336,3 +367,117 @@ body {
 .game-app .quiz .fb { font-size:12px; color:var(--ink-2); margin-top:8px; display:none; }
 
 .game-app .disclaimer { text-align:center; font-size:11.5px; color:var(--ink-3); margin-top:34px; padding:0; }
+
+/* carta do baralho ainda travada (ex.: vacina antes de T+60) */
+.game-app .card.locked { opacity:.55; }
+.game-app .card .clock-note:not(:empty) {
+  display:block; margin-top:5px; font-size:11px; line-height:1.35;
+  color:var(--ink-3); font-variant-numeric:tabular-nums;
+}
+
+/* =========================================================================
+   CAPA (Tela 0) — splash escuro em tela cheia.
+   Tem paleta PROPRIA, fixa e independente do tema claro/escuro do resto do
+   app: e uma abertura, e precisa ser escura nos dois modos. Por isso as cores
+   aqui sao literais, e nao var(--...) do .game-app.
+   ========================================================================= */
+.game-app .cover {
+  position:fixed; inset:0; z-index:100; overflow-y:auto;
+  display:grid; place-items:center; padding:clamp(24px,5vh,64px) 20px;
+  color:#e9eefc; background:#0a1020;
+  background-image:
+    radial-gradient(58% 45% at 50% 0%, rgba(85,102,240,.30), transparent 70%),
+    radial-gradient(45% 40% at 88% 88%, rgba(229,72,77,.20), transparent 70%),
+    radial-gradient(50% 45% at 8% 78%, rgba(61,130,224,.18), transparent 70%);
+  opacity:1; transition:opacity .4s ease;
+}
+.game-app .cover.gone { opacity:0; pointer-events:none; }
+.game-app .cover-inner { max-width:1000px; width:100%; text-align:center; }
+
+.game-app .cover-lang { position:absolute; top:18px; right:20px; display:flex; gap:4px; }
+.game-app .cover-lang button {
+  font:inherit; font-size:12px; padding:6px 13px; border-radius:8px; cursor:pointer;
+  background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); color:#a9b6d4;
+}
+.game-app .cover-lang button[aria-pressed="true"] { background:rgba(255,255,255,.16); color:#fff; }
+
+.game-app .cover-badge {
+  width:96px; height:96px; margin:0 auto 26px; border-radius:50%;
+  display:grid; place-items:center; color:#9db4ff;
+  background:radial-gradient(circle at 50% 35%, #223055, #131c33);
+  border:1px solid rgba(126,145,255,.35);
+  box-shadow:0 0 0 10px rgba(85,102,240,.07), 0 0 60px rgba(85,102,240,.35);
+}
+.game-app .cover-badge svg { width:46px; height:46px; }
+.game-app .cover-title {
+  margin:0 0 10px; font-size:clamp(38px,7vw,76px); line-height:1.02;
+  letter-spacing:-2px; font-weight:800; text-wrap:balance;
+  background:linear-gradient(100deg,#5b9dff 4%,#8f9cff 34%,#d96ba8 68%,#ff4d55 98%);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.game-app .cover-sub {
+  font-size:clamp(22px,3.2vw,34px); font-weight:700; letter-spacing:-.6px;
+  color:#dbe3f8; margin:-4px 0 18px;
+}
+/* kicker em caixa alta entre filetes */
+.game-app .cover-kicker { display:flex; align-items:center; gap:14px; justify-content:center; margin:0 auto 22px; max-width:520px; }
+.game-app .cover-kicker::before, .game-app .cover-kicker::after {
+  content:""; flex:1; height:1px; background:linear-gradient(90deg,transparent,rgba(150,170,225,.45),transparent);
+}
+.game-app .cover-kicker span {
+  font-size:11.5px; font-weight:600; letter-spacing:2.4px; text-transform:uppercase;
+  color:#8fa3d8; white-space:nowrap;
+}
+.game-app .cover-lede {
+  margin:0 auto; max-width:62ch; font-size:clamp(14.5px,1.6vw,17px);
+  line-height:1.65; color:#c2cdea;
+}
+.game-app .cover-author { margin:20px 0 0; font-size:12.5px; color:#7b8bb2; }
+
+.game-app .cover-cta { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin:34px 0 8px; }
+.game-app .cbtn { font:inherit; font-size:15px; font-weight:600; padding:14px 30px; border-radius:999px; cursor:pointer; border:1px solid transparent; transition:transform .15s, filter .15s; }
+.game-app .cbtn:hover { transform:translateY(-1px); }
+.game-app .cbtn-primary {
+  color:#fff; border:0; background:linear-gradient(96deg,#4356e8,#a03d6b 62%,#d33b41);
+  box-shadow:0 8px 30px -8px rgba(140,70,180,.75);
+}
+.game-app .cbtn-primary:hover { filter:brightness(1.1); }
+.game-app .cbtn-ghost { background:rgba(255,255,255,.04); border-color:rgba(160,178,230,.35); color:#cfd9f5; }
+.game-app .cbtn-ghost:hover { border-color:rgba(190,205,255,.6); color:#fff; }
+
+.game-app .cover-cards {
+  display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:18px;
+  margin:52px 0 0; text-align:left;
+}
+.game-app .ccard {
+  padding:22px; border-radius:16px;
+  background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
+  border:1px solid rgba(150,170,225,.16);
+}
+.game-app .ccard .cc-ic {
+  display:grid; place-items:center; width:44px; height:44px; margin-bottom:15px;
+  border-radius:11px; color:#9db4ff;
+  background:rgba(120,140,235,.16); border:1px solid rgba(150,170,225,.2);
+}
+.game-app .ccard .cc-ic svg { width:22px; height:22px; }
+.game-app .ccard h3 { margin:0 0 8px; font-size:16.5px; color:#f0f4ff; }
+.game-app .ccard p { margin:0; font-size:13.5px; line-height:1.6; color:#a9b8da; }
+.game-app .cover-foot { margin:44px 0 0; font-size:11.5px; color:#6f7fa5; }
+
+/* modal "Como funciona", dentro da capa (mantem a estetica escura) */
+.game-app .cover-modal {
+  position:fixed; inset:0; z-index:110; display:none; place-items:center; padding:20px;
+  background:rgba(6,10,22,.82); backdrop-filter:blur(6px);
+}
+.game-app .cover-modal.show { display:grid; }
+.game-app .cm-card {
+  max-width:560px; width:100%; padding:30px; border-radius:18px; text-align:left;
+  background:#111a2e; border:1px solid rgba(150,170,225,.2);
+  box-shadow:0 30px 80px -20px rgba(0,0,0,.8);
+}
+.game-app .cm-card h3 { margin:0 0 18px; font-size:21px; color:#f0f4ff; }
+.game-app .cm-steps { margin:0 0 18px; padding-left:22px; display:flex; flex-direction:column; gap:13px; }
+.game-app .cm-steps li { font-size:13.5px; line-height:1.6; color:#a9b8da; }
+.game-app .cm-steps b { display:block; color:#e9eefc; font-size:14.5px; margin-bottom:2px; }
+.game-app .cm-note { font-size:13px; line-height:1.6; color:#8f9ec4; border-left:2px solid rgba(150,170,225,.3); padding-left:13px; margin:0 0 22px; }
+.game-app .cm-card .cbtn { width:100%; }

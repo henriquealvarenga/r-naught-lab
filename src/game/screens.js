@@ -18,7 +18,8 @@ import { PATHOGENS } from '../data/pathogens.js';
 import { TRANSMISSION_ROUTES } from '../config/constants.js';
 import { DECK, START_BUDGET } from '../data/deck.js';
 import { QUIZZES } from '../data/quiz.js';
-import { t, tf } from '../i18n/index.js';
+import { REAL_DISEASES, R0_MAX_DISEASE } from '../data/real-diseases.js';
+import { t, tf, setLanguage, getLanguage } from '../i18n/index.js';
 import { drawGameCharts } from './charts.js';
 import * as sfx from './sfx.js';
 
@@ -46,10 +47,63 @@ function fmt(n) {
 }
 function pct(x) { return Math.round(x * 100) + '%'; }
 
+/**
+ * Percentual com precisao adaptativa, para os KPIs do cockpit.
+ * Com uma cidade de 12M, obitos e hospitalizados passam quase a partida toda
+ * abaixo de 0,05% — com casas fixas TODOS liam "0.0%" e o painel nao informava
+ * nada. Aqui a casa decimal acompanha a ordem de grandeza.
+ */
+function pctAuto(frac) {
+  const p = frac * 100;
+  if (p === 0) return '0%';
+  if (p >= 10) return p.toFixed(0) + '%';
+  if (p >= 1) return p.toFixed(1) + '%';
+  if (p >= 0.01) return p.toFixed(2) + '%';
+  return '<0,01%';
+}
+
 /* ------------------------------- shell HTML ------------------------------ */
 
-function shellHTML() {
+/**
+ * Capa (Tela 0) — splash escuro em tela cheia, mostrado ao abrir o Modo Jogo.
+ * Fica ACIMA da barra de topo (position:fixed, z-index alto) de proposito: o
+ * cabecalho claro cortando um hero escuro parecia acidente. Por isso a capa
+ * traz o proprio seletor de idioma. Some ao entrar e nao volta na sessao.
+ */
+function coverHTML() {
   return `
+  <section class="cover" id="g-cover">
+    <div class="cover-lang">
+      <button id="g-cover-pt">PT</button><button id="g-cover-en">EN</button>
+    </div>
+    <div class="cover-inner">
+      <div class="cover-badge" id="g-cover-badge"></div>
+      <h1 class="cover-title" id="g-cover-title"></h1>
+      <div class="cover-sub" id="g-cover-sub"></div>
+      <div class="cover-kicker"><span id="g-cover-kicker"></span></div>
+      <p class="cover-lede" id="g-cover-lede"></p>
+      <p class="cover-author" id="g-cover-author"></p>
+      <div class="cover-cta">
+        <button class="cbtn cbtn-primary" id="g-cover-start"></button>
+        <button class="cbtn cbtn-ghost" id="g-cover-help"></button>
+      </div>
+      <div class="cover-cards" id="g-cover-cards"></div>
+      <p class="cover-foot" id="g-cover-foot"></p>
+    </div>
+
+    <div class="cover-modal" id="g-cover-howto">
+      <div class="cm-card">
+        <h3 id="g-howto-title"></h3>
+        <ol class="cm-steps" id="g-howto-steps"></ol>
+        <p class="cm-note" id="g-howto-note"></p>
+        <button class="cbtn cbtn-primary" id="g-howto-close"></button>
+      </div>
+    </div>
+  </section>`;
+}
+
+function shellHTML() {
+  return coverHTML() + `
   <div class="wrap">
     <div class="flow" id="g-flow">
       <div class="step active" data-s="0"><span class="num">1</span><span id="g-flow-0"></span></div>
@@ -62,11 +116,14 @@ function shellHTML() {
     <section class="screen active" id="g-screen-city">
       <div class="screen-head"><h2 id="g-s1-title"></h2><p id="g-s1-sub"></p></div>
       <div class="cities" id="g-city-cards"></div>
-      <div class="actions"><span></span><button class="btn btn-primary" id="g-to-virus" disabled></button></div>
+      <div class="actions">
+        <button class="btn btn-ghost" id="g-to-cover"></button>
+        <button class="btn btn-primary" id="g-to-virus" disabled></button>
+      </div>
     </section>
 
     <section class="screen" id="g-screen-virus">
-      <div class="screen-head"><h2 id="g-s2-title"></h2><p id="g-s2-sub"></p></div>
+      <div class="screen-head"><h2 id="g-s2-title"></h2></div>
       <div class="presets" id="g-presets"></div>
       <div class="virus-grid">
         <div class="panel sliders" id="g-sliders"></div>
@@ -77,6 +134,12 @@ function shellHTML() {
           <div class="drow"><span id="g-dl-route"></span><b id="g-d-route">—</b></div>
           <div class="drow"><span id="g-dl-san"></span><b id="g-d-san">—</b></div>
           <div class="drow"><span id="g-dl-profile"></span><b id="g-d-profile">—</b></div>
+
+          <div class="realdis">
+            <h5 id="g-real-title"></h5>
+            <div id="g-real-list" class="realdis-list"></div>
+            <p class="realdis-note" id="g-real-note"></p>
+          </div>
         </div>
       </div>
       <div class="actions">
@@ -215,6 +278,84 @@ function shellHTML() {
   </div>`;
 }
 
+/* --------------------------------- capa ---------------------------------- */
+
+/**
+ * Icones da capa em SVG inline (traco, monocromaticos, herdam currentColor).
+ * Emoji foi descartado de proposito: 🦠 vem verde e ⏱️/📈 vem coloridos pelo
+ * sistema, brigando com a paleta do hero — e o desenho muda de OS para OS.
+ */
+const svg = (body) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+  stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
+
+/** Virus: nucleo + 8 espiculas com botao na ponta. */
+const ICON_VIRUS = svg(`
+  <circle cx="12" cy="12" r="4.6"/>
+  <path d="M16.6 12h2.8M15.25 15.25l1.98 1.98M12 16.6v2.8M8.75 15.25l-1.98 1.98M7.4 12H4.6M8.75 8.75L6.77 6.77M12 7.4V4.6M15.25 8.75l1.98-1.98"/>
+  <circle cx="20.7" cy="12" r="1.1"/><circle cx="18.15" cy="18.15" r="1.1"/>
+  <circle cx="12" cy="20.7" r="1.1"/><circle cx="5.85" cy="18.15" r="1.1"/>
+  <circle cx="3.3" cy="12" r="1.1"/><circle cx="5.85" cy="5.85" r="1.1"/>
+  <circle cx="12" cy="3.3" r="1.1"/><circle cx="18.15" cy="5.85" r="1.1"/>`);
+
+/** Os tres pilares da capa. So icone + chaves; os textos vivem no i18n. */
+const COVER_CARDS = [
+  { k: 'timing', icon: svg('<circle cx="12" cy="12" r="8.6"/><path d="M12 7.2V12l3.2 2"/>') },
+  { k: 'causality', icon: svg('<path d="M4 6h3.5c3 0 3 12 6 12H17M4 18h3.5c1.4 0 2.2-2.6 2.8-5.4"/><path d="M14.6 3.6L17.6 6l-3 2.4M14.6 15.6l3 2.4-3 2.4"/>') },
+  { k: 'visible', icon: svg('<path d="M3.5 20V4"/><path d="M3.5 20h17"/><path d="M6.5 16.4c2.6 0 3.2-8.2 5.4-8.2 2.4 0 2.6 4.4 4 4.4 1.2 0 1.6-2.2 2.8-4.4"/>') },
+];
+const HOWTO_STEPS = ['territory', 'pathogen', 'outbreak'];
+
+function renderCover() {
+  const set = (id, val) => { const el = $(id); if (el) el.textContent = val; };
+  set('g-cover-title', t('game.cover.title'));
+  set('g-cover-sub', t('game.cover.subtitle'));
+  set('g-cover-kicker', t('game.cover.kicker'));
+  set('g-cover-lede', t('game.cover.lede'));
+  set('g-cover-author', t('game.cover.author'));
+  set('g-cover-start', t('game.cover.start'));
+  set('g-cover-help', t('game.cover.help'));
+  set('g-cover-foot', t('disclaimer'));
+  set('g-howto-title', t('game.cover.howto.title'));
+  set('g-howto-note', t('game.cover.howto.note'));
+  set('g-howto-close', t('game.cover.howto.close'));
+
+  $('g-cover-badge').innerHTML = ICON_VIRUS;
+  $('g-cover-cards').innerHTML = COVER_CARDS.map((c) => `
+    <div class="ccard">
+      <span class="cc-ic">${c.icon}</span>
+      <h3>${t('game.cover.card.' + c.k + '.title')}</h3>
+      <p>${t('game.cover.card.' + c.k + '.desc')}</p>
+    </div>`).join('');
+
+  $('g-howto-steps').innerHTML = HOWTO_STEPS.map((s) =>
+    `<li><b>${t('game.cover.howto.' + s + '.title')}</b>${t('game.cover.howto.' + s + '.desc')}</li>`).join('');
+
+  const lang = getLanguage();
+  $('g-cover-pt').setAttribute('aria-pressed', String(lang === 'pt'));
+  $('g-cover-en').setAttribute('aria-pressed', String(lang === 'en'));
+}
+
+/** Sai da capa para a Tela 1. */
+function dismissCover() {
+  const el = $('g-cover');
+  el.classList.add('gone');
+  sfx.wake();
+  // Espera o fade antes de tirar do fluxo, senao a transicao nao aparece.
+  setTimeout(() => { el.style.display = 'none'; }, 420);
+}
+
+/** Volta para a capa (botao "Início" da Tela 1). Pausa o jogo por seguranca. */
+function showCover() {
+  setPlaying(false);
+  const el = $('g-cover');
+  el.style.display = '';
+  // Força reflow para o navegador registrar o display antes de tirar .gone —
+  // sem isso a transicao de opacidade nao dispara.
+  void el.offsetWidth;
+  el.classList.remove('gone');
+  window.scrollTo({ top: 0 });
+}
+
 /* ------------------------------ tela 1: cidades -------------------------- */
 
 function difficultyKey(cap) {
@@ -311,6 +452,41 @@ function renderSliderValues() {
   });
 }
 
+/**
+ * Comparador de R0 com doencas reais (o "easter-egg" previsto no ROADMAP).
+ * Mostra as duas doencas que cercam o R0 escolhido pelo aluno, mais a barra do
+ * proprio patogeno no meio — ancora a abstracao do slider em algo conhecido.
+ * Dados: src/data/real-diseases.js (nomes reais e publicos; diferente dos
+ * perfis A/B/C de cidades, que sao anonimizados).
+ */
+function renderRealDiseases() {
+  const box = $('g-real-list');
+  if (!box) return;
+  const r0 = game.getState().pathogen.R0;
+  const lang = getLanguage();
+
+  // Vizinhos imediatos na escala: o de R0 logo abaixo e o logo acima.
+  const asc = [...REAL_DISEASES].sort((a, b) => a.r0 - b.r0);
+  const below = [...asc].reverse().find((d) => d.r0 <= r0);
+  const above = asc.find((d) => d.r0 > r0);
+
+  const rows = [];
+  if (below) rows.push({ ...below, kind: 'real' });
+  rows.push({ id: '__you', r0, kind: 'you', name: null });
+  if (above) rows.push({ ...above, kind: 'real' });
+
+  const scale = Math.max(R0_MAX_DISEASE, r0);
+  box.innerHTML = rows.map((d) => {
+    const label = d.kind === 'you' ? t('game.real.yours') : d.name[lang];
+    const val = d.kind === 'you' ? d.r0.toFixed(1) : `${d.r0} (${d.range})`;
+    return `<div class="rd-row ${d.kind === 'you' ? 'is-you' : ''}">
+      <span class="rd-name">${label}</span>
+      <span class="rd-bar"><i style="width:${Math.min(100, d.r0 / scale * 100)}%"></i></span>
+      <span class="rd-val">${val}</span>
+    </div>`;
+  }).join('');
+}
+
 function levelKey(value, hi, mid) {
   return value >= hi ? 'game.level.high' : value >= mid ? 'game.level.medium' : 'game.level.low';
 }
@@ -328,6 +504,7 @@ function updateDerived() {
   $('g-d-profile').textContent = tf('game.derived.profileFmt', {
     t: t(levelKey(p.R0, 4, 2)), s: t(levelKey(p.ifr, 0.05, 0.01)),
   });
+  renderRealDiseases();
 }
 
 /* ------------------------------ tela 3: cockpit -------------------------- */
@@ -358,27 +535,41 @@ function renderDeck() {
   box.innerHTML = DECK.map((iv) => `
     <button class="card" data-id="${iv.id}" aria-pressed="false">
       <span class="ci">${iv.icon}</span>
-      <span class="cbody"><span class="cn">${t(iv.labelKey)}</span><span class="cd">${t(iv.descKey)}</span></span>
+      <span class="cbody"><span class="cn">${t(iv.labelKey)}</span><span class="cd">${t(iv.descKey)}</span>
+        <span class="clock-note" id="g-lock-${iv.id}"></span></span>
       <span class="cost">−${iv.cost}</span>
     </button>`).join('');
   box.querySelectorAll('.card').forEach((el) => el.addEventListener('click', () => {
-    if (game.buyCard(el.dataset.id)) { sfx.intervene(); updateBudget(); syncDeck(); updateHUD(); }
+    if (game.buyCard(el.dataset.id)) { sfx.intervene(); syncDeck(); updateHUD(); }
   }));
 }
 
+/**
+ * Estado visual do baralho: comprada / travada (unlockAfter) / sem orcamento.
+ * Tambem atualiza o medidor de orcamento — os tres andam juntos a cada compra,
+ * avanco de dia e rewind.
+ */
 function syncDeck() {
-  const active = game.activeCardIds();
-  $('g-deck').querySelectorAll('.card').forEach((el) => {
-    el.setAttribute('aria-pressed', String(active.has(el.dataset.id)));
-  });
-}
-function updateBudget() {
   const st = game.getState();
   $('g-budget-v').textContent = st.budget;
   $('g-budget-bar').style.width = (st.budget / START_BUDGET * 100) + '%';
+
   const active = game.activeCardIds();
   $('g-deck').querySelectorAll('.card').forEach((el) => {
-    el.disabled = !active.has(el.dataset.id) && !game.affordable(el.dataset.id);
+    const id = el.dataset.id;
+    const card = DECK.find((c) => c.id === id);
+    const bought = active.has(id);
+    const unlocked = game.isUnlocked(id);
+    el.setAttribute('aria-pressed', String(bought));
+    el.classList.toggle('locked', !bought && !unlocked);
+    el.disabled = !bought && (!unlocked || !game.affordable(id));
+    // Carta travada mostra o dia (absoluto) em que sera liberada.
+    const note = $('g-lock-' + id);
+    if (note) {
+      note.textContent = (!bought && !unlocked)
+        ? tf('game.deck.locked', { day: st.startDay + card.unlockAfter })
+        : '';
+    }
   });
 }
 
@@ -387,8 +578,7 @@ function updateKPIs() {
   const pop = game.population();
   for (const k of KPI_DEFS) {
     $('g-kpi-' + k.key).textContent = fmt(p[k.key]);
-    const frac = p[k.key] / pop;
-    $('g-kpp-' + k.key).textContent = (frac * 100).toFixed(frac < 0.1 ? 1 : 0) + '%';
+    $('g-kpp-' + k.key).textContent = pctAuto(p[k.key] / pop);
   }
 }
 
@@ -503,7 +693,7 @@ function tick() {
   if (!playing) return;
   const { over, newPlantoes } = game.advanceDay();
   sfx.day();
-  updateBudget();
+  syncDeck();
   updateHUD();
   if (newPlantoes.length) enqueuePlantoes(newPlantoes);
   if (over) endGame();
@@ -522,7 +712,7 @@ function initOutbreak() {
   $('g-plantao-overlay').classList.remove('show');
   $('g-feed-overlay').classList.remove('show');
   $('g-macro-title').textContent = tf('game.chart.macroTitle', { city: t(CITIES.find((c) => c.id === game.getState().cityId).labelKey) });
-  renderKPIshell(); renderDeck(); updateBudget(); syncDeck();
+  renderKPIshell(); renderDeck(); syncDeck();
   updateHUD();
   requestAnimationFrame(drawCharts); // garante layout do canvas visivel
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -537,7 +727,7 @@ function doRewind(days) {
   plantaoQueue = []; plantaoActive = false;
   $('g-plantao-overlay').classList.remove('show');
   game.rewind(days);
-  syncDeck(); updateBudget(); updateHUD();
+  syncDeck(); updateHUD();
 }
 
 /* ------------------------------ relatorio -------------------------------- */
@@ -627,10 +817,12 @@ function applyLabels() {
   set('g-flow-2', t('game.flow.outbreak'));
   set('g-s1-title', t('game.screen1.title'));
   set('g-s1-sub', t('game.screen1.sub'));
+  set('g-to-cover', t('game.screen1.cover'));
   set('g-to-virus', t('game.screen1.next'));
   set('g-s2-title', t('game.screen2.title'));
-  set('g-s2-sub', t('game.screen2.sub'));
   set('g-derived-title', t('game.screen2.derivedTitle'));
+  set('g-real-title', t('game.real.title'));
+  set('g-real-note', t('game.real.note'));
   set('g-dl-herd', t('game.derived.herd'));
   set('g-dl-double', t('game.derived.double'));
   set('g-dl-route', t('game.derived.route'));
@@ -702,8 +894,16 @@ export function mountGame(el) {
   rootEl.innerHTML = shellHTML();
 
   applyLabels();
+  renderCover();
   renderCities();
   updateSoundIcon();
+
+  $('g-cover-start').addEventListener('click', dismissCover);
+  $('g-to-cover').addEventListener('click', showCover);
+  $('g-cover-help').addEventListener('click', () => $('g-cover-howto').classList.add('show'));
+  $('g-howto-close').addEventListener('click', () => $('g-cover-howto').classList.remove('show'));
+  $('g-cover-pt').addEventListener('click', () => setLanguage('pt'));
+  $('g-cover-en').addEventListener('click', () => setLanguage('en'));
 
   $('g-to-virus').addEventListener('click', () => { sfx.wake(); renderPresets(); renderSliders(); updateDerived(); goto(1); });
   $('g-back-city').addEventListener('click', () => goto(0));
@@ -742,7 +942,8 @@ export function relayoutGame() { if (screen === 2) requestAnimationFrame(drawCha
 export function onLanguageChangeGame() {
   game.refresh();
   applyLabels();
+  renderCover();
   renderCities();
   if (screen >= 1) { renderPresets(); renderSliders(); updateDerived(); }
-  if (screen === 2) { renderKPIshell(); renderDeck(); updateBudget(); syncDeck(); updateHUD(); }
+  if (screen === 2) { renderKPIshell(); renderDeck(); syncDeck(); updateHUD(); }
 }

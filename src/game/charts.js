@@ -49,7 +49,8 @@ function fmt(n) {
  * @param {HTMLCanvasElement} cv
  * @param {number} maxY            teto do eixo Y (fixo)
  * @param {Array<{data:number[],color:string,fill:boolean}>} series
- * @param {object} opts            { capacity?:number }  linha de capacidade
+ * @param {object} opts            { capacity?:number, maxX?:number }
+ *                                 maxX = teto do eixo X em dias (default: HORIZON)
  * @param {HTMLElement} rootEl     raiz .game-app (para ler os tokens CSS)
  */
 function drawChart(cv, maxY, series, opts, rootEl) {
@@ -68,7 +69,8 @@ function drawChart(cv, maxY, series, opts, rootEl) {
   const mono = cvar(rootEl, '--mono') || 'monospace';
   const pad = { l: 50, r: 12, t: 10, b: 20 };
   const plotW = w - pad.l - pad.r, plotH = h - pad.t - pad.b;
-  const X = (i) => pad.l + (HORIZON <= 1 ? 0 : (i / (HORIZON - 1)) * plotW);
+  const maxX = opts.maxX || HORIZON;
+  const X = (i) => pad.l + (maxX <= 1 ? 0 : (i / (maxX - 1)) * plotW);
   const Y = (v) => pad.t + plotH - (Math.min(v, maxY) / maxY) * plotH;
 
   // grade horizontal + rotulos do eixo Y
@@ -82,7 +84,7 @@ function drawChart(cv, maxY, series, opts, rootEl) {
   // rotulos do eixo X (dias)
   ctx.textAlign = 'center'; ctx.textBaseline = 'top'; ctx.fillStyle = ink3;
   for (let g = 0; g <= 4; g++) {
-    ctx.fillText(String(Math.round((g / 4) * HORIZON)), pad.l + (g / 4) * plotW, pad.t + plotH + 5);
+    ctx.fillText(String(Math.round((g / 4) * maxX)), pad.l + (g / 4) * plotW, pad.t + plotH + 5);
   }
   // linha de capacidade (movel; o eixo e que fica fixo)
   if (opts.capacity != null) {
@@ -117,6 +119,16 @@ function drawChart(cv, maxY, series, opts, rootEl) {
 const ZOOM_FLOOR = 1000;
 
 /**
+ * Catraca do eixo X dos paineis de zoom: sobe em degraus de 30 dias (meses),
+ * com piso de 60. Sem isso o jogador no dia 74 via um quadro de 0 a 360 —
+ * ~80% de espaco vazio — e a curva parecia colada na parede esquerda.
+ * Mesma logica do eixo Y: funcao pura do dia atual, sem estado novo.
+ */
+function niceDays(day) {
+  return Math.max(60, Math.ceil((day + 1) / 30) * 30);
+}
+
+/**
  * Desenha os QUATRO paineis do cockpit (grid 2x2):
  *   coluna esquerda = ESCALA FIXA (magnitude / comparacao — decisao da rodada 2)
  *   coluna direita  = ZOOM AUTOMATICO (catraca: eixo = niceMax(max ate o dia))
@@ -144,12 +156,13 @@ export function drawGameCharts(refs, data) {
     { data: series.D, color: cD, fill: false },
   ], { capacity: capacityNow, capacityLabel }, root);
 
-  // --- DIREITA: zoom automatico (catraca) -----------------------------------
+  // --- DIREITA: zoom automatico (catraca em X e em Y) -----------------------
+  const dayMax = niceDays(series.I.length - 1);
   // Infecciosos — eixo ajustado ao pico de I ate o dia atual.
   const infMax = niceMax(Math.max(ZOOM_FLOOR, ...series.I));
   drawChart(infZoom, infMax, [
     { data: series.I, color: cI, fill: true },
-  ], {}, root);
+  ], { maxX: dayMax }, root);
   // Hospitalizados — piso do eixo = capacidade atual, para a LINHA DE CAPACIDADE
   // aparecer desde o dia 1 (ve-se H subindo ate ela). Se H estoura a capacidade,
   // o eixo sobe (catraca) e a linha desce no quadro — mostrando o quanto furou.
@@ -157,5 +170,5 @@ export function drawGameCharts(refs, data) {
   drawChart(hospZoom, hospMax, [
     { data: series.H, color: cH, fill: true },
     { data: series.D, color: cD, fill: false },
-  ], { capacity: capacityNow, capacityLabel }, root);
+  ], { capacity: capacityNow, capacityLabel, maxX: dayMax }, root);
 }

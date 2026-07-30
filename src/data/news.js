@@ -15,16 +15,25 @@
  *
  * Contexto `c` (montado por src/game/store.js a cada dia):
  *   { day, S,E,I,H,R,D,N, occ, rt, deaths, casos, peakI, peakOcc,
- *     active:Set<engineType>, cityName, r0, routeLabel }
+ *     active:Set<engineType>, cityName, r0, routeLabel, startDay, elapsed }
+ *
+ * IMPORTANTE: gatilhos de tempo usam `c.elapsed` (dias desde a DETECCAO), nunca
+ * `c.day` (dia absoluto do motor, que inclui o periodo de transmissao
+ * silenciosa anterior a deteccao). Usar `c.day` faria manchetes de resposta
+ * social — aplausos, protestos, fadiga — dispararem antes de alguem saber que
+ * havia um surto.
  */
 
 export const NEWS_RULES = [
   // ---- PLANTOES (pausam o jogo; explicam um conceito) ----
   {
     id: 'detect', tier: 'plantao', cat: 'news.cat.breaking', e: '🔬',
-    when: (c) => c.day >= 2,
+    when: (c) => c.elapsed >= 0,   // dispara exatamente no dia da deteccao
     headKey: 'news.detect.head', detailKey: 'news.detect.detail',
-    params: (c) => ({ city: c.cityName, r0: c.r0.toFixed(1), route: c.routeLabel.toLowerCase() }),
+    params: (c) => ({
+      city: c.cityName, r0: c.r0.toFixed(1), route: c.routeLabel.toLowerCase(),
+      silent: c.startDay, cases: Math.round(c.casos).toLocaleString(),
+    }),
   },
   {
     id: 'firstdeath', tier: 'plantao', cat: 'news.cat.mourning', e: '⚰️',
@@ -38,7 +47,7 @@ export const NEWS_RULES = [
   },
   {
     id: 'turnaround', tier: 'plantao', cat: 'news.cat.turnaround', e: '📉',
-    when: (c) => c.rt < 1 && c.day > 8 && c.casos > 10000,
+    when: (c) => c.rt < 1 && c.elapsed > 8 && c.casos > 10000,
     headKey: 'news.turnaround.head', detailKey: 'news.turnaround.detail',
   },
 
@@ -46,7 +55,7 @@ export const NEWS_RULES = [
   { id: 'growth', tier: 'feed', cat: 'news.cat.epidemic', e: '📈',
     when: (c) => c.rt > 1.3 && c.casos > 500, headKey: 'news.growth.head' },
   { id: 'peak', tier: 'feed', cat: 'news.cat.epidemic', e: '📊',
-    when: (c) => c.peakI > 2000 && c.I < c.peakI * 0.9 && c.day > 15, headKey: 'news.peak.head' },
+    when: (c) => c.peakI > 2000 && c.I < c.peakI * 0.9 && c.elapsed > 15, headKey: 'news.peak.head' },
   { id: 'd100', tier: 'feed', cat: 'news.cat.tally', e: '⚰️',
     when: (c) => c.deaths >= 100, headKey: 'news.d100.head' },
   { id: 'd1k', tier: 'feed', cat: 'news.cat.tally', e: '⚰️',
@@ -64,20 +73,20 @@ export const NEWS_RULES = [
   { id: 'emergency', tier: 'feed', cat: 'news.cat.government', e: '📋',
     when: (c) => c.casos > 3000, headKey: 'news.emergency.head' },
   { id: 'misinfo', tier: 'feed', cat: 'news.cat.social_media', e: '📱',
-    when: (c) => c.day >= 40 && c.casos > 5000, headKey: 'news.misinfo.head' },
+    when: (c) => c.elapsed >= 40 && c.casos > 5000, headKey: 'news.misinfo.head' },
   { id: 'tests', tier: 'feed', cat: 'news.cat.science', e: '🔬',
-    when: (c) => c.day >= 25, headKey: 'news.tests.head' },
+    when: (c) => c.elapsed >= 25, headKey: 'news.tests.head' },
   { id: 'vtrial', tier: 'feed', cat: 'news.cat.science', e: '💉',
-    when: (c) => c.day >= 60, headKey: 'news.vtrial.head' },
+    when: (c) => c.elapsed >= 60, headKey: 'news.vtrial.head' },
   { id: 'applause', tier: 'feed', cat: 'news.cat.city', e: '👏',
-    when: (c) => c.day >= 12, headKey: 'news.applause.head' },
+    when: (c) => c.elapsed >= 12, headKey: 'news.applause.head' },
   { id: 'solidarity', tier: 'feed', cat: 'news.cat.city', e: '🤝',
-    when: (c) => c.day >= 22 && c.casos > 800, headKey: 'news.solidarity.head' },
+    when: (c) => c.elapsed >= 22 && c.casos > 800, headKey: 'news.solidarity.head' },
   { id: 'protests', tier: 'feed', cat: 'news.cat.city', e: '📢',
-    when: (c) => c.active.has('distancing') && c.day >= 70,
+    when: (c) => c.active.has('distancing') && c.elapsed >= 70,
     headKey: 'news.protests.head', params: (c) => ({ city: c.cityName }) },
   { id: 'fatigue', tier: 'feed', cat: 'news.cat.city', e: '😮‍💨',
-    when: (c) => c.active.has('distancing') && c.day >= 100, headKey: 'news.fatigue.head' },
+    when: (c) => c.active.has('distancing') && c.elapsed >= 100, headKey: 'news.fatigue.head' },
 
   // ---- ecos das intervencoes do jogador ----
   { id: 'echo-distancing', tier: 'feed', cat: 'news.cat.government', e: '🚧',
