@@ -365,3 +365,58 @@ gancho; a Análise é o aprofundamento de quem já entendeu a dinâmica.
   `onLanguageChange` só chama `rerenderAnalysis()` se o dashboard existir.
   Ordem importa: no `setMode`, o `display` é ajustado **antes** do init, porque
   `drawLineChart` mede `canvas.clientWidth` — com o container escondido daria 0.
+
+---
+
+## 10. Abertura de plantão e identidade da marca (2026-07-30)
+
+**Bug de fundo — o plantão de abertura nunca era exibido.** O usuário reportou
+que a partida começava "muito silenciosa". A causa não era falta de conteúdo:
+`store.initOutbreak()` posiciona `dayIndex` no dia da detecção e chama
+`computeTimeline()` direto, mas o único produtor de plantões-modal era
+`advanceDay()`, que filtra `f.day === state.dayIndex` **depois** do `dayIndex++`.
+No primeiro tick o índice já valia `startDay + 1`, então o lote do dia da
+detecção nunca casava — e, como cada regra fica registrada em `seen`, não podia
+redisparar depois. O plantão `detect` (com o texto que explica que o vírus já
+circulava há ~41 dias) e o `firstdeath` eram computados e engolidos.
+
+- `store.js` ganhou `openingPlantoes()` (lote do `startDay`), consumido pela UI.
+- `latestHeadline()` passou a preferir, dentro do dia mais recente, um item de
+  tier `plantao`. Antes a TV abria em "Casos em aceleração" — o último item
+  empurrado —, e não na manchete de detecção que acabara de acontecer.
+
+**Abertura (`playIntro`).** O momento virou uma vinheta de telejornal em 4 fases
+(`.p1`–`.p4` agendadas por `setTimeout`, animação toda em `@keyframes`): ruído de
+vídeo + varredura → wipe vermelho → carimbo "PLANTÃO" com "AO VIVO" → manchete,
+detalhe e botão. Overlay `#g-intro` em `z-index:130` (acima da capa, que é 100).
+Pulável por clique, `Esc`, `Enter` ou espaço; sob `prefers-reduced-motion` salta
+para o quadro final. Ao encerrar, os plantões restantes do mesmo dia entram na
+fila normal e só então o relógio parte (`resumePlay` é forçado, porque
+`enqueuePlantoes` memorizaria `playing === false`).
+
+**Som — `newsSting()`.** Vinheta de ~2,2 s em quatro gestos: impacto grave
+(90→45 Hz), três notas urgentes staccato, swell ascendente com o lowpass
+abrindo, e acorde final de três saws desafinados. Exigiu um **barramento mestre**
+(`gain → DynamicsCompressor → destination`): enquanto cada som era 1 oscilador
+não havia problema, mas a vinheta sobrepõe até 4 vozes e a soma estourava.
+`beep()` ganhou `detune`, `attack` e um lowpass opcional.
+
+**Decisão de mídia:** descartados narração falada (Web Speech soa robótica e
+varia por navegador) e vídeo (0,5–2 MB inviabilizam o `dist` autocontido, que
+não tem loader de binários). A animação em CSS entrega o efeito com zero bytes
+e é bilíngue por construção. *Se um dia entrar áudio gravado, será preciso
+mexer em `scripts/build.mjs` — hoje ele só inline JS e CSS.*
+
+**Identidade da marca.** Descobriu-se que o repo já tinha o ícone oficial
+(`images/icons/`): carvão quente, anéis concêntricos laranja/verde. A capa
+criada horas antes ignorava isso (vírus genérico, gradiente azul→vermelho). Os
+anéis foram redesenhados como **SVG inline** (são círculos; ~6 linhas) — usar o
+PNG quebraria o dist autocontido e o `rnaught_icon_embedded.svg` tem 149 KB por
+causa da fonte embutida. A capa foi repaletizada para a marca.
+*Custo assumido:* o gradiente azul→vermelho ecoava a paleta suscetível→infeccioso
+dos gráficos; essa leitura se perdeu em troca de coerência com o ícone.
+
+**Verificado:** `npm test` 15/15; build 180 KB e **sem nenhuma referência
+externa a arquivos** (dist segue autocontido); i18n 269/269 em paridade;
+capturas headless confirmando a manchete de detecção na tela (antes ausente), o
+caminho de movimento reduzido e o jogo seguindo normalmente após a abertura.

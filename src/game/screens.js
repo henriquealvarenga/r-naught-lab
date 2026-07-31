@@ -250,6 +250,25 @@ function shellHTML() {
     </div>
   </div>
 
+  <div class="intro" id="g-intro">
+    <div class="intro-noise"></div>
+    <div class="intro-scan"></div>
+    <div class="intro-wipe"></div>
+    <div class="intro-inner">
+      <div class="intro-net" id="g-intro-net"></div>
+      <div class="intro-stamp">
+        <span class="intro-live"><span class="dot"></span><span id="g-intro-live"></span></span>
+        <span class="intro-breaking" id="g-intro-breaking"></span>
+      </div>
+      <div class="intro-lower">
+        <h2 class="intro-head" id="g-intro-head"></h2>
+        <p class="intro-detail" id="g-intro-detail"></p>
+        <button class="btn btn-primary intro-go" id="g-intro-go"></button>
+      </div>
+    </div>
+    <div class="intro-skip" id="g-intro-skip"></div>
+  </div>
+
   <div class="overlay" id="g-plantao-overlay">
     <div class="plantao-card">
       <div class="pl-top">
@@ -288,14 +307,23 @@ function shellHTML() {
 const svg = (body) => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
   stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
 
-/** Virus: nucleo + 8 espiculas com botao na ponta. */
-const ICON_VIRUS = svg(`
-  <circle cx="12" cy="12" r="4.6"/>
-  <path d="M16.6 12h2.8M15.25 15.25l1.98 1.98M12 16.6v2.8M8.75 15.25l-1.98 1.98M7.4 12H4.6M8.75 8.75L6.77 6.77M12 7.4V4.6M15.25 8.75l1.98-1.98"/>
-  <circle cx="20.7" cy="12" r="1.1"/><circle cx="18.15" cy="18.15" r="1.1"/>
-  <circle cx="12" cy="20.7" r="1.1"/><circle cx="5.85" cy="18.15" r="1.1"/>
-  <circle cx="3.3" cy="12" r="1.1"/><circle cx="5.85" cy="5.85" r="1.1"/>
-  <circle cx="12" cy="3.3" r="1.1"/><circle cx="18.15" cy="5.85" r="1.1"/>`);
+/**
+ * Emblema da marca: os aneis concentricos do icone oficial do app
+ * (images/icons/rnaught_icon_512.png), redesenhados como SVG inline.
+ *
+ * Por que redesenhar em vez de usar o arquivo: um <img src="images/..."> quebra
+ * o dist autocontido (scripts/build.mjs so inline JS e CSS, nao ha loader de
+ * binarios), e rnaught_icon_embedded.svg tem 149 KB por causa da fonte embutida.
+ * Sao circulos concentricos — cabem em 6 linhas e escalam sem perda.
+ * As cores sao literais de propósito: e a paleta da MARCA, nao a do tema.
+ */
+const ICON_RINGS = `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+  <circle cx="12" cy="12" r="10.7" stroke="#2a7d5f" stroke-width="0.9"/>
+  <circle cx="12" cy="12" r="8.7" stroke="#2a7d5f" stroke-width="1.25"/>
+  <circle cx="12" cy="12" r="6.6" stroke="#d2622f" stroke-width="1.5"/>
+  <circle cx="12" cy="12" r="4.2" stroke="#d2622f" stroke-width="1.7"/>
+  <circle cx="12" cy="12" r="1.45" fill="#d2622f"/>
+</svg>`;
 
 /** Os tres pilares da capa. So icone + chaves; os textos vivem no i18n. */
 const COVER_CARDS = [
@@ -319,7 +347,7 @@ function renderCover() {
   set('g-howto-note', t('game.cover.howto.note'));
   set('g-howto-close', t('game.cover.howto.close'));
 
-  $('g-cover-badge').innerHTML = ICON_VIRUS;
+  $('g-cover-badge').innerHTML = ICON_RINGS;
   $('g-cover-cards').innerHTML = COVER_CARDS.map((c) => `
     <div class="ccard">
       <span class="cc-ic">${c.icon}</span>
@@ -715,8 +743,79 @@ function initOutbreak() {
   renderKPIshell(); renderDeck(); syncDeck();
   updateHUD();
   requestAnimationFrame(drawCharts); // garante layout do canvas visivel
+
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (!plantaoActive) setPlaying(!reduce);
+
+  // Abertura: o plantao de DETECCAO vira a vinheta; os demais do mesmo dia
+  // (ex.: primeiro obito) entram na fila de modais logo depois.
+  const opening = game.openingPlantoes();
+  const detect = opening.find((p) => p.id === 'detect') || opening[0] || null;
+  const rest = opening.filter((p) => p !== detect);
+
+  playIntro(detect, () => {
+    if (rest.length) {
+      enqueuePlantoes(rest);
+      // enqueuePlantoes memoriza `resumePlay = playing` (falso aqui, o relogio
+      // ainda nao partiu); sobrescrevemos para o jogo comecar ao fechar o ultimo.
+      resumePlay = !reduce;
+    } else {
+      setPlaying(!reduce);
+    }
+  });
+}
+
+/* ------------------------- abertura de plantao ---------------------------- */
+
+let introTimers = [];
+let introDone = null;   // callback pendente; tambem sinaliza "abertura no ar"
+
+/**
+ * Abertura de telejornal exibida ao entrar no cockpit. Encena o plantao de
+ * DETECCAO — que ate agora era computado e nunca mostrado (ver
+ * store.openingPlantoes()).
+ *
+ * As fases sao classes CSS agendadas por setTimeout; a animacao em si e toda
+ * @keyframes. E pulavel a qualquer momento (clique, Esc, Enter) e, sob
+ * prefers-reduced-motion, salta direto para o quadro final.
+ *
+ * @param {object|null} item  plantao 'detect' (do store) ou null
+ * @param {function} onDone   chamado ao terminar/pular — exatamente uma vez
+ */
+function playIntro(item, onDone) {
+  const el = $('g-intro');
+  introDone = onDone;
+
+  $('g-intro-head').textContent = item ? item.head : '';
+  $('g-intro-detail').textContent = item ? item.detail : '';
+
+  el.classList.remove('gone', 'p1', 'p2', 'p3', 'p4');
+  el.classList.add('show');
+
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduce) {
+    el.classList.add('p1', 'p2', 'p3', 'p4', 'no-anim');
+    return;                                  // sem som nem fases; espera o clique
+  }
+
+  sfx.newsSting();
+  const at = (ms, fn) => introTimers.push(setTimeout(fn, ms));
+  at(60,   () => el.classList.add('p1'));    // ruido + varredura
+  at(280,  () => el.classList.add('p2'));    // wipe vermelho
+  at(900,  () => el.classList.add('p3'));    // carimbo PLANTAO
+  at(1500, () => el.classList.add('p4'));    // manchete + detalhe + botao
+}
+
+/** Encerra a abertura (fim natural, clique, Esc ou Enter). Idempotente. */
+function endIntro() {
+  if (!introDone) return;
+  const fn = introDone;
+  introDone = null;
+  introTimers.forEach(clearTimeout);
+  introTimers = [];
+  const el = $('g-intro');
+  el.classList.add('gone');
+  setTimeout(() => { el.classList.remove('show', 'gone'); }, 340);
+  fn();
 }
 
 /* ------------------------------- rewind ---------------------------------- */
@@ -850,6 +949,11 @@ function applyLabels() {
   set('g-deck-hint', t('game.deck.hint'));
   set('g-restart', '↺ ' + t('game.restart.title'));
   set('g-disclaimer', t('disclaimer'));
+  set('g-intro-net', t('game.intro.network'));
+  set('g-intro-live', t('game.intro.live'));
+  set('g-intro-breaking', t('game.intro.breaking'));
+  set('g-intro-go', t('game.intro.continue'));
+  set('g-intro-skip', t('game.intro.skip'));
   set('g-plantao-live', t('game.plantao.live'));
   set('g-plantao-continue', t('game.plantao.continue'));
   set('g-feed-title', t('game.feed.title'));
@@ -913,6 +1017,13 @@ export function mountGame(el) {
   $('g-back1').addEventListener('click', () => doRewind(1));
   $('g-restart').addEventListener('click', () => goto(0));   // Reiniciar: volta pra 1a tela
   $('g-sound').addEventListener('click', () => { sfx.toggle(); updateSoundIcon(); });
+  // Abertura: clique em qualquer ponto, Esc ou Enter encerram.
+  $('g-intro').addEventListener('click', endIntro);
+  window.addEventListener('keydown', (ev) => {
+    if (!introDone) return;
+    if (ev.key === 'Escape' || ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); endIntro(); }
+  });
+
   $('g-plantao-x').addEventListener('click', dismissPlantao);
   $('g-plantao-continue').addEventListener('click', dismissPlantao);
   $('g-tv').addEventListener('click', openFeed);

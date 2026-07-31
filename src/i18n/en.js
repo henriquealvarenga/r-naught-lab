@@ -173,6 +173,12 @@ export default {
   'game.screen3.back': '← Pathogen',
 
   // Breaking / Feed
+  'game.intro.network': 'HEALTH NEWS NETWORK',
+  'game.intro.live': 'LIVE',
+  'game.intro.breaking': 'BREAKING',
+  'game.intro.continue': 'Take command ▶',
+  'game.intro.skip': 'click to skip',
+
   'game.plantao.live': 'BREAKING · SNN',
   'game.plantao.close': 'Close',
   'game.plantao.continue': 'Continue ▶',

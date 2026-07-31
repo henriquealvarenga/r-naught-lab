@@ -181,6 +181,12 @@ export default {
   'game.deck.hint': 'clique para implantar — vale do dia atual em diante',
   'game.screen3.back': '← Patógeno',
 
+  'game.intro.network': 'SAÚDE NEWS NETWORK',
+  'game.intro.live': 'AO VIVO',
+  'game.intro.breaking': 'PLANTÃO',
+  'game.intro.continue': 'Assumir o comando ▶',
+  'game.intro.skip': 'clique para pular',
+
   // Plantão / Feed
   'game.plantao.live': 'PLANTÃO · SNN',
   'game.plantao.close': 'Fechar',

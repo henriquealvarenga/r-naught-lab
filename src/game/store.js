@@ -284,9 +284,30 @@ export function activeCardIds() {
   return new Set(state.interventions.map((iv) => iv.cardId));
 }
 
-/** Ultima manchete do feed (mostrada na TV), ou null. */
+/**
+ * Plantoes do DIA DA DETECCAO — o lote de abertura da partida.
+ *
+ * Existe porque `advanceDay()` (o unico outro produtor de plantoes) filtra por
+ * `f.day === state.dayIndex` DEPOIS de incrementar o indice: no primeiro tick
+ * ele ja procura por startDay+1, e o lote de abertura nunca casaria. Como cada
+ * regra fica registrada em `seen`, ela tambem nao redispara depois — ou seja,
+ * sem esta funcao o plantao de deteccao era perdido em silencio.
+ */
+export function openingPlantoes() {
+  return state.feed.filter((f) => f.tier === 'plantao' && f.day === state.startDay);
+}
+
+/**
+ * Manchete mostrada na TV do cockpit. Dentro do dia mais recente, um plantao
+ * ganha do feed comum: varias regras disparam no mesmo dia e pegar simplesmente
+ * a ultima empurrada fazia a TV abrir em "Casos em aceleracao" em vez da
+ * manchete de deteccao, que e a que acabou de acontecer.
+ */
 export function latestHeadline() {
-  return state.feed.length ? state.feed[state.feed.length - 1] : null;
+  if (!state.feed.length) return null;
+  const lastDay = state.feed[state.feed.length - 1].day;
+  const sameDay = state.feed.filter((f) => f.day === lastDay);
+  return sameDay.find((f) => f.tier === 'plantao') || sameDay[sameDay.length - 1];
 }
 
 export function canRewind() { return state.dayIndex > state.startDay; }

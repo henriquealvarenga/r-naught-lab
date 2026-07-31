@@ -1,7 +1,17 @@
 /* styles.css — estilo unico da aplicacao. Mantido simples e sem framework. */
 :root {
-  --bg: #f1f5f9; --card: #ffffff; --ink: #0f172a; --muted: #64748b;
-  --line: #e2e8f0; --primary: #2563eb; --ok: #16a34a; --no: #dc2626;
+  /* Paleta da MARCA (icone oficial): neutros quentes + laranja + verde. */
+  --bg: #f4f2ec; --card: #ffffff; --ink: #1f1e18; --muted: #7a7466;
+  --line: #e4dfd4; --primary: #c25a2a; --ok: #1f8a5f; --no: #cf3f45;
+}
+/* Variante escura do CHROME da aplicacao (barra de topo + Modo Analise).
+   Antes so o .game-app tinha tema escuro, entao no modo escuro do sistema o
+   cabecalho branco flutuava sobre um cockpit carvao. */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #15140e; --card: #1e1d15; --ink: #efece1; --muted: #8a8474;
+    --line: #332f23; --primary: #e07a42; --ok: #2ba873; --no: #ef5359;
+  }
 }
 * { box-sizing: border-box; }
 body {
@@ -62,7 +72,7 @@ body {
 .map { background: var(--card); border: 1px solid var(--line); border-radius: 12px; width: 100%; height: 200px; }
 .explanation { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; font-size: 13px; }
 .explanation h4 { margin: 0 0 8px; }
-.explanation p { margin: 0 0 6px; color: #334155; }
+.explanation p { margin: 0 0 6px; color: color-mix(in srgb, var(--ink) 84%, transparent); }
 
 .scenario-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .scenario-card { text-align: left; background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; cursor: pointer; display: flex; flex-direction: column; gap: 6px; }
@@ -71,8 +81,10 @@ body {
 .scenario-card span { font-size: 12px; color: var(--muted); }
 
 .scenario-result { padding: 12px 16px; border-radius: 10px; font-weight: 600; }
-.scenario-result.ok { background: #dcfce7; color: #166534; }
-.scenario-result.no { background: #fee2e2; color: #991b1b; }
+/* Derivados dos tokens para funcionarem nos dois temas (eram pasteis fixos,
+   ilegiveis sobre o card escuro). */
+.scenario-result.ok { background: color-mix(in srgb, var(--ok) 15%, var(--card)); color: var(--ok); }
+.scenario-result.no { background: color-mix(in srgb, var(--no) 15%, var(--card)); color: var(--no); }
 
 .disclaimer { font-size: 11px; color: var(--muted); text-align: center; padding: 8px; }
 
@@ -89,10 +101,13 @@ body {
    colidir com as classes homonimas do Modo Analise.
    ========================================================================= */
 .game-app {
-  --bg:#eef1f6; --panel:#ffffff; --panel-2:#f6f8fb; --line:#dbe1ec; --line-strong:#c4cddd;
-  --ink:#182031; --ink-2:#46536b; --ink-3:#6b7890;
-  --accent:#5566f0; --accent-ink:#ffffff; --accent-soft:#e7e9ff;
-  --c-S:#3d82e0; --c-I:#e5484d; --c-H:#ef8c17; --c-R:#1fb672; --c-D:#7b899f; --crit:#e5484d;
+  --bg:#f0ede5; --panel:#ffffff; --panel-2:#faf8f3; --line:#e2ddd1; --line-strong:#cbc3b3;
+  --ink:#1f1e18; --ink-2:#565248; --ink-3:#837d6f;
+  --accent:#c25a2a; --accent-ink:#ffffff; --accent-soft:#f8e8dd;
+  /* Compartimentos: I vermelho e S azul seguem semanticos. H foi de laranja
+     para AMBAR porque o laranja virou a cor de acento da marca e os dois
+     colidiam. R adota o verde da marca. */
+  --c-S:#3d82e0; --c-I:#d3383e; --c-H:#dfa016; --c-R:#1f8a5f; --c-D:#8a8378; --crit:#d3383e;
   --sans:"SF Pro Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
   --mono:"SF Mono","JetBrains Mono",ui-monospace,"Cascadia Code",Menlo,Consolas,monospace;
   --r:14px; --r-sm:9px;
@@ -102,10 +117,10 @@ body {
 }
 @media (prefers-color-scheme: dark) {
   .game-app {
-    --bg:#0f1622; --panel:#161f2e; --panel-2:#1b263a; --line:#263349; --line-strong:#33445f;
-    --ink:#e7edf6; --ink-2:#a7b4c8; --ink-3:#74849d;
-    --accent:#6d7cff; --accent-ink:#0f1622; --accent-soft:#202a55;
-    --c-S:#4d9fff; --c-I:#f0575c; --c-H:#f79009; --c-R:#32d583; --c-D:#8896aa; --crit:#f0575c;
+    --bg:#15140e; --panel:#1e1d15; --panel-2:#25231a; --line:#332f23; --line-strong:#453f2f;
+    --ink:#efece1; --ink-2:#b4afa0; --ink-3:#8a8474;
+    --accent:#e07a42; --accent-ink:#15140e; --accent-soft:#3a2517;
+    --c-S:#4d9fff; --c-I:#ef5359; --c-H:#e8ab2a; --c-R:#2ba873; --c-D:#948d80; --crit:#ef5359;
     --shadow:0 1px 2px rgba(0,0,0,.3),0 14px 34px -14px rgba(0,0,0,.6);
   }
 }
@@ -236,7 +251,7 @@ body {
 .game-app .budget .brow b { white-space:nowrap; }
 .game-app .budget .brow b { font-family:var(--mono); color:var(--ink); font-size:13px; letter-spacing:0; }
 .game-app .budget .meter { height:8px; }
-.game-app .budget .meter i { background:linear-gradient(90deg, var(--accent), #8b97ff); transition:width .3s; }
+.game-app .budget .meter i { background:linear-gradient(90deg, var(--accent), #e2a06a); transition:width .3s; }
 
 /* KPIs */
 .game-app .g-kpis { display:grid; grid-template-columns:repeat(6,1fr); gap:10px; margin-bottom:14px; }
@@ -290,7 +305,9 @@ body {
 .game-app .tv-live { display:flex; align-items:center; gap:5px; font-weight:800; letter-spacing:.5px; color:#ff5a5f; }
 .game-app .tv-live .dot { width:7px; height:7px; border-radius:50%; background:#ff3b30; animation:tvblink 1.4s infinite; }
 @keyframes tvblink { 0%,100% { opacity:1; } 50% { opacity:.2; } }
-@media (prefers-reduced-motion: reduce) { .game-app .tv-live .dot { animation:none; } }
+@media (prefers-reduced-motion: reduce) {
+  .game-app .tv-live .dot, .game-app .pl-live .dot { animation:none; }
+}
 .game-app .tv-chan { font-weight:700; letter-spacing:.3px; color:#aab6cc; }
 .game-app .tv-screen { position:relative; aspect-ratio:16/10; min-height:118px; display:grid; place-items:center; background:radial-gradient(120% 90% at 50% 0%, #1b2942 0%, #0c1526 62%, #070c17 100%); }
 .game-app .tv-scene { font-size:46px; filter:drop-shadow(0 4px 10px rgba(0,0,0,.55)); transition:transform .3s; }
@@ -347,6 +364,95 @@ body {
 .game-app .card[aria-pressed="true"] .cn::before { content:"✓ "; color:var(--c-R); font-weight:800; }
 .game-app .card:disabled { opacity:.5; cursor:not-allowed; }
 
+/* =========================================================================
+   ABERTURA DE PLANTAO (Tela 3) — encena o plantao de DETECCAO ao entrar no
+   cockpit. Paleta propria escura (e uma vinheta de TV), acima de tudo:
+   a capa e z-index 100 e o modal dela 110, entao aqui vai 130.
+   Todas as fases sao classes .p1/.p2/.p3/.p4 agendadas pelo JS.
+   ========================================================================= */
+.game-app .intro {
+  position:fixed; inset:0; z-index:130; display:none; overflow:hidden;
+  background:#07090f; color:#eef2fb; cursor:pointer;
+  opacity:1; transition:opacity .32s ease;
+}
+.game-app .intro.show { display:grid; place-items:center; }
+.game-app .intro.gone { opacity:0; pointer-events:none; }
+
+/* ruido de video + linhas de varredura */
+.game-app .intro-noise {
+  position:absolute; inset:0; opacity:0; pointer-events:none;
+  background:repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0 1px, transparent 1px 3px);
+}
+.game-app .intro.p1 .intro-noise { animation:introNoise .5s steps(3) 2; }
+.game-app .intro-scan {
+  position:absolute; left:0; right:0; height:38%; opacity:0; pointer-events:none;
+  background:linear-gradient(180deg, transparent, rgba(120,150,255,.16), transparent);
+}
+.game-app .intro.p1 .intro-scan { animation:introScan 1.5s ease-in-out 2; }
+/* wipe vermelho que rasga a tela */
+.game-app .intro-wipe {
+  position:absolute; left:0; right:0; top:50%; height:0; transform:translateY(-50%);
+  background:linear-gradient(90deg,#e5484d,#a3141a); pointer-events:none;
+}
+.game-app .intro.p2 .intro-wipe { animation:introWipe .62s cubic-bezier(.7,0,.2,1) forwards; }
+
+.game-app .intro-inner { position:relative; z-index:2; text-align:center; padding:24px; max-width:760px; }
+.game-app .intro-net {
+  font-size:11.5px; font-weight:800; letter-spacing:3.4px; color:#7f8fb5;
+  opacity:0; margin-bottom:20px;
+}
+.game-app .intro.p2 .intro-net { animation:introFade .5s ease forwards; }
+
+.game-app .intro-stamp { display:flex; align-items:center; justify-content:center; gap:14px; opacity:0; }
+.game-app .intro.p3 .intro-stamp { animation:introStamp .5s cubic-bezier(.2,1.5,.4,1) forwards; }
+.game-app .intro-live {
+  display:inline-flex; align-items:center; gap:7px; padding:6px 12px; border-radius:6px;
+  background:#e5484d; color:#fff; font-size:11.5px; font-weight:800; letter-spacing:1px;
+}
+.game-app .intro-live .dot { width:8px; height:8px; border-radius:50%; background:#fff; animation:tvblink 1.1s infinite; }
+.game-app .intro-breaking {
+  font-size:clamp(34px,6vw,62px); font-weight:800; letter-spacing:-1.5px; line-height:1;
+  background:linear-gradient(100deg,#ff6a4d,#e5484d 60%,#b02a2f);
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+
+.game-app .intro-lower { opacity:0; margin-top:26px; }
+.game-app .intro.p4 .intro-lower { animation:introLower .55s cubic-bezier(.2,.8,.3,1) forwards; }
+.game-app .intro-head {
+  margin:0 0 14px; font-size:clamp(20px,3.2vw,30px); line-height:1.2;
+  letter-spacing:-.5px; text-wrap:balance; color:#fff;
+}
+.game-app .intro-detail {
+  margin:0 auto 22px; max-width:60ch; font-size:14px; line-height:1.65; color:#a9b8da;
+}
+.game-app .intro-go { pointer-events:none; }   /* o clique e capturado pelo overlay */
+
+.game-app .intro-skip {
+  position:absolute; bottom:22px; left:0; right:0; text-align:center;
+  font-size:11.5px; color:#5d6a8a; opacity:0;
+}
+.game-app .intro.p3 .intro-skip { animation:introFade .6s ease .4s forwards; }
+
+@keyframes introNoise { 0%,100% { opacity:0; } 50% { opacity:1; } }
+@keyframes introScan  { 0% { top:-40%; opacity:.9; } 100% { top:100%; opacity:0; } }
+@keyframes introWipe  { 0% { width:0; height:3px; left:50%; } 55% { width:100%; height:3px; left:0; } 100% { width:100%; height:132px; left:0; opacity:0; } }
+@keyframes introFade  { to { opacity:1; } }
+@keyframes introStamp { 0% { opacity:0; transform:scale(1.5) rotate(-3deg); } 100% { opacity:1; transform:scale(1) rotate(0); } }
+@keyframes introLower { 0% { opacity:0; transform:translateY(26px); } 100% { opacity:1; transform:translateY(0); } }
+
+/* Sem animacao: mostra o quadro final direto (prefers-reduced-motion). */
+.game-app .intro.no-anim .intro-noise,
+.game-app .intro.no-anim .intro-scan,
+.game-app .intro.no-anim .intro-wipe { display:none; }
+.game-app .intro.no-anim .intro-net,
+.game-app .intro.no-anim .intro-stamp,
+.game-app .intro.no-anim .intro-lower,
+.game-app .intro.no-anim .intro-skip { opacity:1; animation:none; }
+
+@media (prefers-reduced-motion: reduce) {
+  .game-app .intro-live .dot { animation:none; }
+}
+
 /* overlays (fim, plantao, feed) */
 .game-app .overlay { position:fixed; inset:0; background:color-mix(in srgb, var(--bg) 78%, transparent); backdrop-filter:blur(5px); display:none; place-items:center; padding:20px; z-index:60; }
 .game-app .overlay.show { display:grid; }
@@ -384,11 +490,12 @@ body {
 .game-app .cover {
   position:fixed; inset:0; z-index:100; overflow-y:auto;
   display:grid; place-items:center; padding:clamp(24px,5vh,64px) 20px;
-  color:#e9eefc; background:#0a1020;
+  /* Paleta da MARCA (icone oficial): carvao quente + laranja + verde. */
+  color:#eeece4; background:#14140f;
   background-image:
-    radial-gradient(58% 45% at 50% 0%, rgba(85,102,240,.30), transparent 70%),
-    radial-gradient(45% 40% at 88% 88%, rgba(229,72,77,.20), transparent 70%),
-    radial-gradient(50% 45% at 8% 78%, rgba(61,130,224,.18), transparent 70%);
+    radial-gradient(58% 45% at 50% 0%, rgba(210,98,47,.22), transparent 70%),
+    radial-gradient(48% 42% at 86% 86%, rgba(42,125,95,.20), transparent 70%),
+    radial-gradient(50% 45% at 8% 78%, rgba(210,98,47,.12), transparent 70%);
   opacity:1; transition:opacity .4s ease;
 }
 .game-app .cover.gone { opacity:0; pointer-events:none; }
@@ -397,53 +504,53 @@ body {
 .game-app .cover-lang { position:absolute; top:18px; right:20px; display:flex; gap:4px; }
 .game-app .cover-lang button {
   font:inherit; font-size:12px; padding:6px 13px; border-radius:8px; cursor:pointer;
-  background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); color:#a9b6d4;
+  background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.12); color:#b5b1a3;
 }
 .game-app .cover-lang button[aria-pressed="true"] { background:rgba(255,255,255,.16); color:#fff; }
 
 .game-app .cover-badge {
   width:96px; height:96px; margin:0 auto 26px; border-radius:50%;
-  display:grid; place-items:center; color:#9db4ff;
-  background:radial-gradient(circle at 50% 35%, #223055, #131c33);
-  border:1px solid rgba(126,145,255,.35);
-  box-shadow:0 0 0 10px rgba(85,102,240,.07), 0 0 60px rgba(85,102,240,.35);
+  display:grid; place-items:center;
+  background:radial-gradient(circle at 50% 35%, #24241a, #17170f);
+  border:1px solid rgba(210,98,47,.30);
+  box-shadow:0 0 0 10px rgba(210,98,47,.06), 0 0 60px rgba(210,98,47,.28);
 }
-.game-app .cover-badge svg { width:46px; height:46px; }
+.game-app .cover-badge svg { width:58px; height:58px; }
 .game-app .cover-title {
   margin:0 0 10px; font-size:clamp(38px,7vw,76px); line-height:1.02;
   letter-spacing:-2px; font-weight:800; text-wrap:balance;
-  background:linear-gradient(100deg,#5b9dff 4%,#8f9cff 34%,#d96ba8 68%,#ff4d55 98%);
+  background:linear-gradient(100deg,#ffa76b 2%,#f0834a 30%,#d2622f 66%,#b4491f 98%);
   -webkit-background-clip:text; background-clip:text; color:transparent;
 }
 .game-app .cover-sub {
   font-size:clamp(22px,3.2vw,34px); font-weight:700; letter-spacing:-.6px;
-  color:#dbe3f8; margin:-4px 0 18px;
+  color:#e8e5d9; margin:-4px 0 18px;
 }
 /* kicker em caixa alta entre filetes */
 .game-app .cover-kicker { display:flex; align-items:center; gap:14px; justify-content:center; margin:0 auto 22px; max-width:520px; }
 .game-app .cover-kicker::before, .game-app .cover-kicker::after {
-  content:""; flex:1; height:1px; background:linear-gradient(90deg,transparent,rgba(150,170,225,.45),transparent);
+  content:""; flex:1; height:1px; background:linear-gradient(90deg,transparent,rgba(42,125,95,.55),transparent);
 }
 .game-app .cover-kicker span {
   font-size:11.5px; font-weight:600; letter-spacing:2.4px; text-transform:uppercase;
-  color:#8fa3d8; white-space:nowrap;
+  color:#6fa98d; white-space:nowrap;
 }
 .game-app .cover-lede {
   margin:0 auto; max-width:62ch; font-size:clamp(14.5px,1.6vw,17px);
-  line-height:1.65; color:#c2cdea;
+  line-height:1.65; color:#cac6b8;
 }
-.game-app .cover-author { margin:20px 0 0; font-size:12.5px; color:#7b8bb2; }
+.game-app .cover-author { margin:20px 0 0; font-size:12.5px; color:#8d897b; }
 
 .game-app .cover-cta { display:flex; gap:14px; justify-content:center; flex-wrap:wrap; margin:34px 0 8px; }
 .game-app .cbtn { font:inherit; font-size:15px; font-weight:600; padding:14px 30px; border-radius:999px; cursor:pointer; border:1px solid transparent; transition:transform .15s, filter .15s; }
 .game-app .cbtn:hover { transform:translateY(-1px); }
 .game-app .cbtn-primary {
-  color:#fff; border:0; background:linear-gradient(96deg,#4356e8,#a03d6b 62%,#d33b41);
-  box-shadow:0 8px 30px -8px rgba(140,70,180,.75);
+  color:#fff; border:0; background:linear-gradient(96deg,#d2622f,#a8562f 55%,#2a7d5f);
+  box-shadow:0 8px 30px -8px rgba(160,90,45,.7);
 }
 .game-app .cbtn-primary:hover { filter:brightness(1.1); }
-.game-app .cbtn-ghost { background:rgba(255,255,255,.04); border-color:rgba(160,178,230,.35); color:#cfd9f5; }
-.game-app .cbtn-ghost:hover { border-color:rgba(190,205,255,.6); color:#fff; }
+.game-app .cbtn-ghost { background:rgba(255,255,255,.04); border-color:rgba(120,160,140,.4); color:#d3d0c4; }
+.game-app .cbtn-ghost:hover { border-color:rgba(160,200,180,.7); color:#fff; }
 
 .game-app .cover-cards {
   display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:18px;
@@ -452,32 +559,32 @@ body {
 .game-app .ccard {
   padding:22px; border-radius:16px;
   background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02));
-  border:1px solid rgba(150,170,225,.16);
+  border:1px solid rgba(190,175,150,.16);
 }
 .game-app .ccard .cc-ic {
   display:grid; place-items:center; width:44px; height:44px; margin-bottom:15px;
-  border-radius:11px; color:#9db4ff;
-  background:rgba(120,140,235,.16); border:1px solid rgba(150,170,225,.2);
+  border-radius:11px; color:#e08a52;
+  background:rgba(210,98,47,.14); border:1px solid rgba(210,98,47,.22);
 }
 .game-app .ccard .cc-ic svg { width:22px; height:22px; }
-.game-app .ccard h3 { margin:0 0 8px; font-size:16.5px; color:#f0f4ff; }
-.game-app .ccard p { margin:0; font-size:13.5px; line-height:1.6; color:#a9b8da; }
-.game-app .cover-foot { margin:44px 0 0; font-size:11.5px; color:#6f7fa5; }
+.game-app .ccard h3 { margin:0 0 8px; font-size:16.5px; color:#f2efe6; }
+.game-app .ccard p { margin:0; font-size:13.5px; line-height:1.6; color:#b3aea0; }
+.game-app .cover-foot { margin:44px 0 0; font-size:11.5px; color:#7d7969; }
 
 /* modal "Como funciona", dentro da capa (mantem a estetica escura) */
 .game-app .cover-modal {
   position:fixed; inset:0; z-index:110; display:none; place-items:center; padding:20px;
-  background:rgba(6,10,22,.82); backdrop-filter:blur(6px);
+  background:rgba(12,12,8,.85); backdrop-filter:blur(6px);
 }
 .game-app .cover-modal.show { display:grid; }
 .game-app .cm-card {
   max-width:560px; width:100%; padding:30px; border-radius:18px; text-align:left;
-  background:#111a2e; border:1px solid rgba(150,170,225,.2);
+  background:#1c1c14; border:1px solid rgba(190,175,150,.2);
   box-shadow:0 30px 80px -20px rgba(0,0,0,.8);
 }
-.game-app .cm-card h3 { margin:0 0 18px; font-size:21px; color:#f0f4ff; }
+.game-app .cm-card h3 { margin:0 0 18px; font-size:21px; color:#f2efe6; }
 .game-app .cm-steps { margin:0 0 18px; padding-left:22px; display:flex; flex-direction:column; gap:13px; }
-.game-app .cm-steps li { font-size:13.5px; line-height:1.6; color:#a9b8da; }
-.game-app .cm-steps b { display:block; color:#e9eefc; font-size:14.5px; margin-bottom:2px; }
-.game-app .cm-note { font-size:13px; line-height:1.6; color:#8f9ec4; border-left:2px solid rgba(150,170,225,.3); padding-left:13px; margin:0 0 22px; }
+.game-app .cm-steps li { font-size:13.5px; line-height:1.6; color:#b3aea0; }
+.game-app .cm-steps b { display:block; color:#efece2; font-size:14.5px; margin-bottom:2px; }
+.game-app .cm-note { font-size:13px; line-height:1.6; color:#a09b8c; border-left:2px solid rgba(42,125,95,.5); padding-left:13px; margin:0 0 22px; }
 .game-app .cm-card .cbtn { width:100%; }
