@@ -1,9 +1,67 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>R Naught Lab — Simulador Epidemiológico</title>
+  <meta name="description" content="Simulador epidemiológico educacional com modelo SEIHRD e metapopulação: entenda como parâmetros demográficos e virais moldam a curva de uma epidemia, o pico hospitalar e o número de mortes.">
+  <link rel="canonical" href="https://henriquealvarenga.com/r-naught-lab/">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://henriquealvarenga.com/r-naught-lab/">
+
+  <!-- Identificação do autor em dados estruturados (schema.org, JSON-LD).
+       Invisível para o leitor; lido por Google, ChatGPT, Claude e Gemini.
+       O @id da Pessoa é o MESMO usado em henriquealvarenga.com, o que consolida
+       a autoria de tudo o que está publicado no domínio numa única entidade. -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Person",
+        "@id": "https://henriquealvarenga.com/#pessoa",
+        "name": "Henrique Alvarenga da Silva",
+        "honorificPrefix": "Dr.",
+        "jobTitle": "Médico Psiquiatra e Professor de Medicina",
+        "url": "https://henriquealvarenga.com",
+        "identifier": [
+          { "@type": "PropertyValue", "propertyID": "CRM-MG", "value": "31.778" },
+          { "@type": "PropertyValue", "propertyID": "RQE", "value": "8381" },
+          { "@type": "PropertyValue", "propertyID": "ORCID", "value": "0000-0001-9799-5240" }
+        ],
+        "affiliation": [
+          { "@type": "CollegeOrUniversity", "name": "Universidade Federal de São João del-Rei (UFSJ)" },
+          { "@type": "CollegeOrUniversity", "name": "Centro Universitário Presidente Tancredo de Almeida Neves (UNIPTAN)" }
+        ],
+        "sameAs": [
+          "https://orcid.org/0000-0001-9799-5240",
+          "https://lattes.cnpq.br/6147640440978297",
+          "https://scholar.google.com/citations?user=Fbv4vDsAAAAJ",
+          "https://www.linkedin.com/in/henriquealvarengasilva"
+        ]
+      },
+      {
+        "@type": "SoftwareApplication",
+        "@id": "https://henriquealvarenga.com/r-naught-lab/#app",
+        "name": "R Naught Lab — Simulador Epidemiológico Educacional",
+        "description": "Simulador com motor SEIHRD e metapopulação, em dois modos: jogo e análise. Mostra como população, densidade, mobilidade, saneamento, R₀, letalidade e período infeccioso moldam a curva de uma epidemia.",
+        "author": { "@id": "https://henriquealvarenga.com/#pessoa" },
+        "url": "https://henriquealvarenga.com/r-naught-lab/",
+        "codeRepository": "https://github.com/henriquealvarenga/r-naught-lab",
+        "applicationCategory": "EducationalApplication",
+        "operatingSystem": "Navegador web",
+        "isAccessibleForFree": true,
+        "inLanguage": ["pt-BR", "en"],
+        "audience": { "@type": "EducationalAudience", "educationalRole": "student" },
+        "about": [
+          { "@type": "Thing", "name": "Epidemiologia" },
+          { "@type": "Thing", "name": "Modelo SEIHRD" },
+          { "@type": "Thing", "name": "Número básico de reprodução" }
+        ]
+      }
+    ]
+  }
+  </script>
   <link rel="stylesheet" href="./src/ui/styles.css" />
 </head>
 <body>
